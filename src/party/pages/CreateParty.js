@@ -10,7 +10,6 @@ import Button from '../../shared/components/FormElements/Button';
 
 import { AuthContext } from '../../shared/context/auth-context';
 import Loading from '../../shared/components/Loading';
-import { set } from 'react-hook-form';
 
 const CreateParty = props => {
     const auth = useContext(AuthContext);
@@ -47,7 +46,7 @@ const CreateParty = props => {
             setCollections(data.collections);
             setIsLoading(false);
         })
-    }, []);
+    }, [auth]);
 
     const addRemoveItem = (itemId) => {
         if(selectAlert) {
@@ -137,13 +136,13 @@ const CreateParty = props => {
                 <h2 className='title'>Create Party</h2>
                 <div className='create-divider'></div>
                 <p className='option-text'>Secret Mode</p>
-                <img className='option-img' src={ secretMode ? check : circle } onClick={() => { setSecretMode(!secretMode) }} />
+                <img className='option-img' src={ secretMode ? check : circle } alt='' onClick={() => { setSecretMode(!secretMode) }} />
                 <p className='option-subtext'>Party members will not see each other's votes</p>                
                 <p className='option-text'>Include Watched</p>
-                <img className='option-img' src={ includeWatched ? check : circle } onClick={() => { setIncludeWatched(!includeWatched) }} />
+                <img className='option-img' src={ includeWatched ? check : circle } alt='' onClick={() => { setIncludeWatched(!includeWatched) }} />
                 <p className='option-subtext'>Include items that have been marked as watched/played</p>  
                 <p className='option-text'>Super Choice Mode</p>
-                <img className='option-img' src={ superChoice ? check : circle } onClick={() => { setSuperChoice(!superChoice) }} />
+                <img className='option-img' src={ superChoice ? check : circle } alt='' onClick={() => { setSuperChoice(!superChoice) }} />
                 <p className='option-subtext'>
                     Super choice mode allows for more passionate voting. Double tap to star a choice to ensure it moves on to the next round.
                     All party members will see the star in subsequent rounds and it cannot be starred again.

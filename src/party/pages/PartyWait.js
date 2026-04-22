@@ -80,6 +80,7 @@ const PartyWait = ({ socket }) => {
                 })
             });
         });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
@@ -117,6 +118,7 @@ const PartyWait = ({ socket }) => {
             socket.off('start-party');
             socket.off('party-deleted');
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const routeToParty = () => {
@@ -246,7 +248,7 @@ const PartyWait = ({ socket }) => {
                 </div>
         }
         {
-            ((userType === 'guest' && superChoiceEnabled) || userType == 'owner') &&
+            ((userType === 'guest' && superChoiceEnabled) || userType === 'owner') &&
             (
                 <div className='tip-section' style={{height: '20px'}}></div>
             )

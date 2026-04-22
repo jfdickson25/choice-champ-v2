@@ -113,19 +113,20 @@ const Party = ({ socket }) => {
             // Join the party room. This will restrict the same movie getting voted in different parties
             socket.emit('join-room', code);
         });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
         socket.on('vote-increment', (id) => {
             // Find item with the id and increment the vote count
-            const item = collectionPointRef.current.find(item => item.id == id);
+            const item = collectionPointRef.current.find(item => item.id === id);
             item.votes += 1;
             setCollectionItems([...collectionPointRef.current]);
         });
 
         socket.on('vote-decrement', (id) => {
             // Find item with the id and decrement the vote count
-            const item = collectionPointRef.current.find(item => item.id == id);
+            const item = collectionPointRef.current.find(item => item.id === id);
             item.votes -= 1;
             setCollectionItems([...collectionPointRef.current]);
         });
@@ -137,7 +138,7 @@ const Party = ({ socket }) => {
 
         socket.on('super-choice', (id) => {
             // Find item with the id and set holdSuperChoice to true
-            const item = collectionPointRef.current.find(item => item.id == id);
+            const item = collectionPointRef.current.find(item => item.id === id);
 
             item.holdSuperChoice = true;
             setCollectionItems([...collectionPointRef.current]);
@@ -145,7 +146,7 @@ const Party = ({ socket }) => {
 
         socket.on('remove-super-choice', (id) => {
             // Find item with the id and set holdSuperChoice to false
-            const item = collectionPointRef.current.find(item => item.id == id);
+            const item = collectionPointRef.current.find(item => item.id === id);
             
             item.holdSuperChoice = false;
             setCollectionItems([...collectionPointRef.current]);
@@ -222,7 +223,7 @@ const Party = ({ socket }) => {
 
             // If the usersReadyCount is equal to the totalUsers then filter all the items that have
             // less votes than the votesNeeded. Reset the votes and voted for all filtered items
-            if(usersReadyCountRef.current == totalUsersRef.current) {
+            if(usersReadyCountRef.current === totalUsersRef.current) {
                 // Filter out the items that have been voted for
                 const filteredItems = collectionPointRef.current.filter(item => (item.votes >= votesNeededRef.current || item.holdSuperChoice || item.tempSuperChoice));
 
@@ -339,6 +340,7 @@ const Party = ({ socket }) => {
             socket.off('super-choice');
             socket.off('remove-super-choice');
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const changeCount = (id) => {
@@ -397,7 +399,7 @@ const Party = ({ socket }) => {
 
             // If the usersReadyCount is equal to the totalUsers then filter all the items that have
             // less votes than the votesNeeded. Reset the votes and voted for all filtered items
-            if(usersReadyCountRef.current == totalUsersRef.current) {
+            if(usersReadyCountRef.current === totalUsersRef.current) {
                 // Filter out the items that have been voted for
                 const filteredItems = collectionItems.filter(item => (item.votes >= votesNeededRef.current) || item.holdSuperChoice || item.tempSuperChoice);
 
@@ -758,7 +760,7 @@ const Party = ({ socket }) => {
         {
             (finished && userType === 'owner' && !newCollectionCreated && !newCollectionSaving) && (
                 <div id="export-section">
-                    <input id='collection-name' type='text' placeholder='Collection Name' value={newCollectionName} onChange={e => setNewCollectionName(e.target.value)} />
+                    <input className='text-input' id='collection-name' type='text' placeholder='Collection Name' value={newCollectionName} onChange={e => setNewCollectionName(e.target.value)} />
                     <Button className='export-btn' onClick={exportFinished}>Create Collection</Button>
                 </div>
             )
@@ -788,6 +790,7 @@ const Party = ({ socket }) => {
                         <img
                             className='winner-img'
                             src={collectionItems[0].poster}
+                            alt={`${collectionItems[0].title} poster`}
                         />
                         {
                             (mediaType === 'movie' || mediaType === 'tv') ? (
@@ -876,7 +879,7 @@ const Party = ({ socket }) => {
                                                                 changeActiveRunnerUp(item.itemId) 
                                                             }
                                                         }}>
-                                                            <img src={item.poster} className='runner-up-watchable-img' style={item.active ? {border: 'solid 5px #FCB016'} : null } />
+                                                            <img src={item.poster} alt={`${item.title} poster`} className='runner-up-watchable-img' style={item.active ? {border: 'solid 5px #FCB016'} : null } />
                                                             { 
                                                                 item.superChoice &&
                                                                     <FontAwesomeIcon
@@ -894,9 +897,9 @@ const Party = ({ socket }) => {
                         </div>
                     </div>
                 ) : [...collectionItems].reverse().map(item => (
-                    <div className='item-section clickable' key={item.id} onClick={() => { if(!finished) { changeCount(item.id) }}}>
-                        <PlaceholderImg 
-                            classNames='item-img'
+                    <div className='party-item-section clickable' key={item.id} onClick={() => { if(!finished) { changeCount(item.id) }}}>
+                        <PlaceholderImg
+                            classNames='party-item-img'
                             src={item.poster}
                             collectionColor={
                                 (mediaType === 'movie' ? '#FCB016' : mediaType === 'tv' ? '#45B859' : mediaType === 'game' ? '#2482C5' : '#3a9b4c')

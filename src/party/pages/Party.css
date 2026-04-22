@@ -87,7 +87,7 @@
     padding-right: 10px;
 }
 
-.item-section {
+.party-item-section {
     width: 100%;
     height: 100%;
     column-count: 1;
@@ -289,7 +289,7 @@
     color: #FCB016;
 }
 
-.item-img {
+.party-item-img {
     height: auto;
     width: 100%;
     grid-column: 1/4;

@@ -19,7 +19,7 @@ const JoinParty = (props) => {
 
     useEffect(() => {
         auth.showFooterHandler(true);
-    }, []);
+    }, [auth]);
 
     const navToPartyWait = () => {
         // Grab the join code from the input and validate it is 4 digits if it is 4 digits, navigate to the party page if it is not 4 digits, display an error message
@@ -77,9 +77,9 @@ const JoinParty = (props) => {
             (<img src={back} alt="Back symbol" className="top-left clickable" onClick={navBack} />)
         }
         <h2 className='title'>Join Party</h2>
-        <img src={`${process.env.PUBLIC_URL}/img/Choice-Champ-Join-Party-Img.png`} className="join-img" alt='Join Code Image'/>
+        <img src={`${process.env.PUBLIC_URL}/img/Choice-Champ-Join-Party-Img.png`} className="join-img" alt='Join Code'/>
         <div id='join-party-page'>
-            <input type="number" min="0" max="9999" placeholder="Join Code" ref={inputRef} onChange={changeHandler} />
+            <input className='text-input' type="number" min="0" max="9999" placeholder="Join Code" ref={inputRef} onChange={changeHandler} />
             <Button className="join-btn" onClick={navToPartyWait}>Join Party</Button>
             <p className='join-party-error-msg'>{errorMessage}</p>
         </div>
