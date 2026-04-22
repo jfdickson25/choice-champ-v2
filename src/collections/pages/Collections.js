@@ -5,6 +5,10 @@ import Loading from '../../shared/components/Loading';
 
 import edit from '../../shared/assets/img/edit.png';
 import editing from '../../shared/assets/img/editing.png';
+import back from '../../shared/assets/img/back.svg';
+import removeImg from '../../shared/assets/img/remove.png';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
 
 import './Collections.css';
 import { AuthContext } from '../../shared/context/auth-context';
@@ -263,8 +267,8 @@ const Collections = props => {
             <div className='content'>
                 {
                     navingBack ? 
-                    (<img src="https://cdn.glitch.global/ebf12691-ad1e-4a83-81e2-641b9d7c5f64/back-button-active.png?v=1702137193420" alt="Back symbol" className="top-left clickable" style={{animation: 'button-press .75s'}} />) : 
-                    (<img src="https://cdn.glitch.global/ebf12691-ad1e-4a83-81e2-641b9d7c5f64/back-button.png?v=1702137134668" alt="Back symbol" className="top-left clickable" onClick={navBack} />)
+                    (<img src={back} alt="Back symbol" className="top-left clickable" style={{animation: 'button-press .75s'}} />) :
+                    (<img src={back} alt="Back symbol" className="top-left clickable" onClick={navBack} />)
                 }
                 <h2 className={`title color-${collectionsType}`}>{title}</h2>
                 <img src={ isEdit ? editing :  edit } className="edit clickable" alt='Edit icon' onClick={isEditHandler} style={isEdit ? {animation: 'button-press .75s'} : null} />
@@ -292,12 +296,12 @@ const Collections = props => {
                             collections.length > 0 ? collections.map((collection, index) => (
                                 isEdit ? (
                                     <div className='collections-item' key={collection._id}>
-                                        <img className='remove' alt="Remove Icon" onClick={() => { handleRemoveCollection(collection._id) }} src='https://cdn.glitch.global/7cdfb78e-767d-42ef-b9ca-2f58981eb393/remove.png?v=1682136649433' />
-                                        { index !== 0 && <img className='left' alt="left arrow" onClick={() => { moveLeft(collection._id) }} src='https://cdn.glitch.global/7cdfb78e-767d-42ef-b9ca-2f58981eb393/left.png?v=1692161740511' /> }
+                                        <img className='remove' alt="Remove Icon" onClick={() => { handleRemoveCollection(collection._id) }} src={removeImg} />
+                                        { index !== 0 && <FontAwesomeIcon className='left' onClick={() => { moveLeft(collection._id) }} icon={faChevronLeft} /> }
                                         <div className={`collection-text-${collectionsType} collection-text`}>
                                             {collection.name}
                                         </div>
-                                        { index !== collections.length - 1 && <img className='right' alt="right arrow" onClick={ () => { moveRight(collection._id) } } src='https://cdn.glitch.global/7cdfb78e-767d-42ef-b9ca-2f58981eb393/right.png?v=1692161745669' /> }
+                                        { index !== collections.length - 1 && <FontAwesomeIcon className='right' onClick={ () => { moveRight(collection._id) } } icon={faChevronRight} /> }
                                     </div>
                                 ) : (
                                     <Link to={`/collections/${collectionsType}/${collection._id}`} className='collections-item' key={collection._id} >

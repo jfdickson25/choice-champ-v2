@@ -6,8 +6,12 @@ import edit from '../../shared/assets/img/edit.png';
 import editing from '../../shared/assets/img/editing.png';
 import circle from '../../shared/assets/img/circle.png';
 import check from '../../shared/assets/img/check.png';
+import back from '../../shared/assets/img/back.svg';
+import removeImg from '../../shared/assets/img/remove.png';
 import movieNight from '../../welcome/assets/img/movie-night.svg';
 import watch from '../../welcome/assets/img/watch.svg';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faPlus, faChevronLeft, faChevronRight, faStar, faFlagCheckered, faCircleInfo, faImage } from '@fortawesome/free-solid-svg-icons';
 
 import './Settings.css';
 import { Dialog } from '@mui/material';
@@ -133,11 +137,11 @@ const Settings = () => {
                     <div className='dialog-sub-content'>
                         <h2 className='modal-header'>Flaticon Attribution</h2>
                         <div className='flaticon-link'>
-                            <img src='https://cdn.glitch.global/ebf12691-ad1e-4a83-81e2-641b9d7c5f64/back-button.png?v=1702137134668' />
+                            <img src={back} />
                             <a href="https://www.flaticon.com/free-icons/back-button" title="back button icons">Back button icons created by The Chohans - Flaticon</a>
                         </div>
                         <div className='flaticon-link'>
-                            <img src='https://cdn.glitch.global/ebf12691-ad1e-4a83-81e2-641b9d7c5f64/plus-button.png?v=1702138169050' />
+                            <FontAwesomeIcon icon={faPlus} />
                             <a href="https://www.flaticon.com/free-icons/read-more" title="read more icons">Read more icons created by Bharat Icons - Flaticon</a>
                         </div>
                         <div className='flaticon-link'>
@@ -145,11 +149,11 @@ const Settings = () => {
                             <a href="https://www.flaticon.com/free-icons/edit" title="edit icons">Edit icons created by iconixar - Flaticon</a>
                         </div>
                         <div className='flaticon-link'>
-                            <img src='https://cdn.glitch.global/ebf12691-ad1e-4a83-81e2-641b9d7c5f64/back-button-active.png?v=1702137193420' />
+                            <img src={back} />
                             <a href="https://www.flaticon.com/free-icons/back-button" title="back button icons">Back button icons created by The Chohans - Flaticon</a>
                         </div>
                         <div className='flaticon-link'>
-                            <img src='https://cdn.glitch.global/ebf12691-ad1e-4a83-81e2-641b9d7c5f64/plus-button-active.png?v=1702137827635' />
+                            <FontAwesomeIcon icon={faPlus} />
                             <a href="https://www.flaticon.com/free-icons/read-more" title="read more icons">Read more icons created by Bharat Icons - Flaticon</a>
                         </div>
                         <div className='flaticon-link'>
@@ -157,11 +161,11 @@ const Settings = () => {
                             <a href="https://www.flaticon.com/free-icons/circle" title="circle icons">Circle icons created by Freepik - Flaticon</a>
                         </div>
                         <div className='flaticon-link'>
-                            <img src='https://cdn.glitch.global/7cdfb78e-767d-42ef-b9ca-2f58981eb393/left.png?v=1692161740511' />
+                            <FontAwesomeIcon icon={faChevronLeft} />
                             <a href="https://www.flaticon.com/free-icons/back" title="back icons">Back icons created by Arkinasi - Flaticon</a>
                         </div>
                         <div className='flaticon-link'>
-                            <img src='https://cdn.glitch.global/7cdfb78e-767d-42ef-b9ca-2f58981eb393/right.png?v=1692161745669' />
+                            <FontAwesomeIcon icon={faChevronRight} />
                             <a href="https://www.flaticon.com/free-icons/back" title="back icons">Back icons created by Arkinasi - Flaticon</a>
                         </div>
                         <div className='flaticon-link'>
@@ -169,7 +173,7 @@ const Settings = () => {
                             <a href="https://www.flaticon.com/free-icons/edit" title="edit icons">Edit icons created by iconixar - Flaticon</a>
                         </div>
                         <div className='flaticon-link'>
-                            <img src='https://cdn.glitch.global/7cdfb78e-767d-42ef-b9ca-2f58981eb393/remove.png?v=1682136649433' />
+                            <img src={removeImg} />
                             <a href="https://www.flaticon.com/free-icons/delete" title="delete icons">Delete icons created by Pixel perfect - Flaticon</a>
                         </div>
                         <div className='flaticon-link'>
@@ -177,19 +181,19 @@ const Settings = () => {
                             <a href="https://www.flaticon.com/free-icons/yes" title="yes icons">Yes icons created by juicy_fish - Flaticon</a>
                         </div>
                         <div className='flaticon-link'>
-                            <img src='https://cdn.glitch.global/ebf12691-ad1e-4a83-81e2-641b9d7c5f64/star.png?v=1699066109692' />
+                            <FontAwesomeIcon icon={faStar} />
                             <a href="https://www.flaticon.com/free-icons/rating" title="rating icons">Rating icons created by Corner Pixel - Flaticon</a>
                         </div>
                         <div className='flaticon-link'>
-                            <img src='https://cdn.glitch.global/ebf12691-ad1e-4a83-81e2-641b9d7c5f64/racing-flag.png?v=1719917111577' />
+                            <FontAwesomeIcon icon={faFlagCheckered} />
                             <a href="https://www.flaticon.com/free-icons/finish" title="finish icons">Finish icons created by Freepik - Flaticon</a>
                         </div>
                         <div className='flaticon-link'>
-                            <img src='https://cdn.glitch.global/ebf12691-ad1e-4a83-81e2-641b9d7c5f64/info-1.png?v=1720119048801' />
+                            <FontAwesomeIcon icon={faCircleInfo} />
                             <a href="https://www.flaticon.com/free-icons/information" title="information icons">Information icons created by Anggara - Flaticon</a>
                         </div>
                         <div className='flaticon-link'>
-                            <img src='https://cdn.glitch.global/ebf12691-ad1e-4a83-81e2-641b9d7c5f64/img-not-found.png?v=1720192051302' />
+                            <FontAwesomeIcon icon={faImage} />
                             <a href="https://www.flaticon.com/free-icons/image-placeholder" title="image placeholder icons">Image placeholder icons created by HideMaru - Flaticon</a>
                         </div>
                     </div>

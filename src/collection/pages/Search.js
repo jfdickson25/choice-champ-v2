@@ -8,20 +8,21 @@ import { Dialog } from '@mui/material';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faXmark } from '@fortawesome/free-solid-svg-icons';
+import { faXmark, faCircleInfo } from '@fortawesome/free-solid-svg-icons';
 
 import './Search.css';
 
 import circle from '../../shared/assets/img/circle.png';
 import check from '../../shared/assets/img/check.png';
 import searchIcon from '../../shared/assets/img/search.svg';
+import back from '../../shared/assets/img/back.svg';
 import PlaceholderImg from '../../shared/components/PlaceholderImg'
 
 const Search = ({ socket }) => {
     const auth = useContext(AuthContext);
     let navigate = useNavigate();
 
-    const infoImg = 'https://cdn.glitch.global/ebf12691-ad1e-4a83-81e2-641b9d7c5f64/info-1.png?v=1720119048801';
+    const imageNotFound = `${process.env.PUBLIC_URL}/img/image-not-found.svg`;
 
     /************************************************************
      * Initial load and data needed. Here we grab the info we need
@@ -149,7 +150,7 @@ const Search = ({ socket }) => {
                 if (collectionType === 'movie') {
 
                     if (mediaItem.poster_path === null || mediaItem.poster_path === undefined || mediaItem.poster_path === '') {
-                        mediaItem.poster_path = 'https://cdn.glitch.global/ebf12691-ad1e-4a83-81e2-641b9d7c5f64/image-not-found-500-750.png?v=1720192338848';
+                        mediaItem.poster_path = imageNotFound;
                     } else {
                         mediaItem.poster_path = `https://image.tmdb.org/t/p/w500${mediaItem.poster_path}`;
                     }
@@ -167,7 +168,7 @@ const Search = ({ socket }) => {
                 } else if (collectionType === 'tv') {
 
                     if (mediaItem.poster_path === null || mediaItem.poster_path === undefined || mediaItem.poster_path === '') {
-                        mediaItem.poster_path = 'https://cdn.glitch.global/ebf12691-ad1e-4a83-81e2-641b9d7c5f64/image-not-found-500-750.png?v=1720192338848';
+                        mediaItem.poster_path = imageNotFound;
                     } else {
                         mediaItem.poster_path = `https://image.tmdb.org/t/p/w500${mediaItem.poster_path}`;
                     }
@@ -185,7 +186,7 @@ const Search = ({ socket }) => {
                 } else if (collectionType === 'game') {
 
                     if (mediaItem.image.original_url === null || mediaItem.image.original_url === undefined || mediaItem.image.original_url === '') {
-                        mediaItem.image.original_url = 'https://cdn.glitch.global/ebf12691-ad1e-4a83-81e2-641b9d7c5f64/image-not-found-500-750.png?v=1720192338848';
+                        mediaItem.image.original_url = imageNotFound;
                     }
                     
                     setItems(prevState => [...prevState, {
@@ -431,8 +432,8 @@ const Search = ({ socket }) => {
             <ToastContainer />
             {
                 navingBack ? 
-                (<img src="https://cdn.glitch.global/ebf12691-ad1e-4a83-81e2-641b9d7c5f64/back-button-active.png?v=1702137193420" alt="Back symbol" className="top-left clickable" style={{animation: 'button-press .75s'}} />) : 
-                (<img src="https://cdn.glitch.global/ebf12691-ad1e-4a83-81e2-641b9d7c5f64/back-button.png?v=1702137134668" alt="Back symbol" className="top-left clickable" onClick={navBack} />)
+                (<img src={back} alt="Back symbol" className="top-left clickable" style={{animation: 'button-press .75s'}} />) :
+                (<img src={back} alt="Back symbol" className="top-left clickable" onClick={navBack} />)
             }
             <h2 className={`title color-${collectionType}`}>{collectionName}</h2>
             <div className='search-bar-container'>
@@ -477,7 +478,7 @@ const Search = ({ socket }) => {
                                             <Loading color={collectionTypeColor} type='beat' size={15} speed={.5} className='loading-save' />
                                         )
                                     }
-                                    <img src={infoImg} alt={'More info'} onClick={(e) => { e.stopPropagation(); getActiveItem(item.id, item.inCollection); setOpen(true); }} className='more-info clickable' />
+                                    <FontAwesomeIcon icon={faCircleInfo} onClick={(e) => { e.stopPropagation(); getActiveItem(item.id, item.inCollection); setOpen(true); }} className='more-info clickable' />
                                     </React.Fragment>
                                 )
                             }

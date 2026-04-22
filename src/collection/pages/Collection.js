@@ -8,6 +8,8 @@ import { faArrowDownAZ, faClock, faEye, faGamepad, faChessPawn, faXmark } from '
 import edit from '../../shared/assets/img/edit.png';
 import editing from '../../shared/assets/img/editing.png';
 import searchIcon from '../../shared/assets/img/search.svg';
+import back from '../../shared/assets/img/back.svg';
+import removeImg from '../../shared/assets/img/remove.png';
 
 import './Collection.css';
 import PlaceholderImg from '../../shared/components/PlaceholderImg';
@@ -284,8 +286,8 @@ const Collection = ({ socket }) => {
                 }
                 {
                     navingBack ? 
-                    (<img src="https://cdn.glitch.global/ebf12691-ad1e-4a83-81e2-641b9d7c5f64/back-button-active.png?v=1702137193420" alt="Back symbol" className="top-left clickable" style={{animation: 'button-press .75s'}} />) : 
-                    (<img src="https://cdn.glitch.global/ebf12691-ad1e-4a83-81e2-641b9d7c5f64/back-button.png?v=1702137134668" alt="Back symbol" className="top-left clickable" onClick={navBack} />)
+                    (<img src={back} alt="Back symbol" className="top-left clickable" style={{animation: 'button-press .75s'}} />) :
+                    (<img src={back} alt="Back symbol" className="top-left clickable" onClick={navBack} />)
                 }
                 { isEdit 
                     ? (<input className='title' style={{gridColumn:"5/14", marginBottom: "10px"}} value={collectionName} onChange={e => setCollectionName(e.target.value)} />)
@@ -352,7 +354,7 @@ const Collection = ({ socket }) => {
                                                             :
                                                             <PlaceholderImg voted={null} finished={null} alt={`${item.title} poster`} collectionColor={collectionTypeColor} classNames='item-img' src={item.poster} />
                                                     }
-                                                    { isEdit ? (<img src={'https://cdn.glitch.global/7cdfb78e-767d-42ef-b9ca-2f58981eb393/remove.png?v=1682136649433'} alt={`${item.title} poster`} className='item-action clickable' onClick={() => { removeItem(item._id) }} />) : null }
+                                                    { isEdit ? (<img src={removeImg} alt={`${item.title} poster`} className='item-action clickable' onClick={() => { removeItem(item._id) }} />) : null }
                                                     { isEdit ? (
                                                         <FontAwesomeIcon icon={collectionType === 'game' ? faGamepad : collectionType === 'board' ? faChessPawn :faEye} size="xl" 
                                                         className='item-action-watched clickable' onClick={() => {updateWatched(item._id)}} /> 
@@ -377,7 +379,7 @@ const Collection = ({ socket }) => {
                                                             :
                                                             <PlaceholderImg voted={null} finished={null} alt={`${item.title} poster`} collectionColor={collectionTypeColor} classNames='item-img' src={item.poster} />
                                                     }
-                                                    { isEdit ? (<img src={'https://cdn.glitch.global/7cdfb78e-767d-42ef-b9ca-2f58981eb393/remove.png?v=1682136649433'} alt={`${item.title} poster`} className='item-action clickable' onClick={() => { removeItem(item._id) }} />) : null }
+                                                    { isEdit ? (<img src={removeImg} alt={`${item.title} poster`} className='item-action clickable' onClick={() => { removeItem(item._id) }} />) : null }
                                                     { isEdit ? (
                                                         <FontAwesomeIcon icon={collectionType === 'game' ? faGamepad : collectionType === 'board' ? faChessPawn :faEye} size="xl" 
                                                         className='item-action-watched clickable' onClick={() => {updateWatched(item._id)}} /> 
@@ -411,7 +413,7 @@ const Collection = ({ socket }) => {
                                                             :
                                                             <PlaceholderImg voted={null} finished={null} alt={`${item.title} poster`} collectionColor={collectionTypeColor} classNames='item-img' src={item.poster} />
                                                         }
-                                                        { isEdit ? (<img src={'https://cdn.glitch.global/7cdfb78e-767d-42ef-b9ca-2f58981eb393/remove.png?v=1682136649433'} alt={`${item.title} poster`} className='item-action clickable' onClick={() => { removeItem(item._id) }} />) : null }
+                                                        { isEdit ? (<img src={removeImg} alt={`${item.title} poster`} className='item-action clickable' onClick={() => { removeItem(item._id) }} />) : null }
                                                         { isEdit ? (
                                                             <FontAwesomeIcon icon={collectionType === 'game' ? faGamepad : collectionType === 'board' ? faChessPawn :faEye} size="xl" 
                                                             className={`item-action-watched color-${collectionType} clickable`} onClick={() => {updateWatched(item._id, item.watched)}} /> 

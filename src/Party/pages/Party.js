@@ -5,8 +5,12 @@ import Button from '../../shared/components/FormElements/Button';
 import Confetti from 'react-confetti';
 import Loading from '../../shared/components/Loading';
 import { AuthContext } from '../../shared/context/auth-context';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faStar, faFlagCheckered } from '@fortawesome/free-solid-svg-icons';
+import back from '../../shared/assets/img/back.svg';
+import dice from '../../shared/assets/img/dices.png';
 
-import './Party.css'; 
+import './Party.css';
 import PlaceholderImg from '../../shared/components/PlaceholderImg';
 
 const Party = ({ socket }) => {
@@ -698,8 +702,8 @@ const Party = ({ socket }) => {
         { (collectionItems.length === 1 || finished) && ( <Confetti height={Math.max( document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight ) } width={window.innerWidth} style={{zIndex: -1}}/> )}
         {
             navingBack ? 
-            (<img src="https://cdn.glitch.global/ebf12691-ad1e-4a83-81e2-641b9d7c5f64/back-button-active.png?v=1702137193420" alt="Back symbol" className="top-left clickable" style={{animation: 'button-press .75s'}} />) : 
-            (<img src="https://cdn.glitch.global/ebf12691-ad1e-4a83-81e2-641b9d7c5f64/back-button.png?v=1702137134668" alt="Back symbol" className="top-left clickable" onClick={navToParty} />)
+            (<img src={back} alt="Back symbol" className="top-left clickable" style={{animation: 'button-press .75s'}} />) :
+            (<img src={back} alt="Back symbol" className="top-left clickable" onClick={navToParty} />)
         }
         { (userType === 'owner' && collectionItems.length > 1 && !finished) ? (
             <div className='votes-needed-section'>
@@ -738,12 +742,12 @@ const Party = ({ socket }) => {
         }
         { (userType === 'owner' && collectionItems.length > 1 && !finished) && (
             <div className='flag-section party-icon-section clickable'>
-                <img src={'https://cdn.glitch.global/ebf12691-ad1e-4a83-81e2-641b9d7c5f64/racing-flag.png?v=1719917111577'} className="flag" alt='Flag' onClick={selectFlag} />
+                <FontAwesomeIcon icon={faFlagCheckered} className="flag clickable" onClick={selectFlag} />
             </div>
         )}
         { (userType === 'owner' && collectionItems.length > 1 && !finished) && (
             <div className='dice-section party-icon-section clickable'>
-                <img src={'https://cdn.glitch.global/ebf12691-ad1e-4a83-81e2-641b9d7c5f64/dices.png?v=1703952034117'} className="dice" alt='Dice' onClick={selectRandom} />
+                <img src={dice} className="dice" alt='Dice' onClick={selectRandom} />
             </div>
         ) }
         {
@@ -875,9 +879,9 @@ const Party = ({ socket }) => {
                                                             <img src={item.poster} className='runner-up-watchable-img' style={item.active ? {border: 'solid 5px #FCB016'} : null } />
                                                             { 
                                                                 item.superChoice &&
-                                                                    <img 
+                                                                    <FontAwesomeIcon
+                                                                        icon={faStar}
                                                                         className='runner-up-super-choice'
-                                                                        src="https://cdn.glitch.global/ebf12691-ad1e-4a83-81e2-641b9d7c5f64/star.png?v=1699066109692" 
                                                                     />
                                                             }
                                                         </div>
@@ -903,13 +907,14 @@ const Party = ({ socket }) => {
                         { (item.votes > 0 && !secretMode) && <div className='item-votes'>{item.votes}</div> }
                         { 
                             ((item.tempSuperChoice || item.superChoice) && superChoiceMode) && 
-                                <img 
+                                <FontAwesomeIcon
+                                    icon={faStar}
                                     className={
                                         item.superChoice ? 'item-super-choice' :
                                         item.tempSuperChoice ? 'item-temp-super-choice' : null
-                                    } 
-                                    src="https://cdn.glitch.global/ebf12691-ad1e-4a83-81e2-641b9d7c5f64/star.png?v=1699066109692" 
-                                /> 
+                                    }
+                                />
+
                         }
                     </div>
                 ))
@@ -952,7 +957,7 @@ const Party = ({ socket }) => {
                         slideDown ? { transform: 'translateY(100vh)', transition: 'transform 2s ease-in-out' } : null
                     }
                 >
-                    <img src={'https://cdn.glitch.global/ebf12691-ad1e-4a83-81e2-641b9d7c5f64/dices.png?v=1703952034117'} className='random-selected-dice' alt='Dice' />
+                    <img src={dice} className='random-selected-dice' alt='Dice' />
                 </div>
             )
         }
@@ -965,7 +970,7 @@ const Party = ({ socket }) => {
                         slideDown ? { transform: 'translateY(100vh)', transition: 'transform 2s ease-in-out' } : null
                     }
                 >
-                    <img src={'https://cdn.glitch.global/ebf12691-ad1e-4a83-81e2-641b9d7c5f64/racing-flag.png?v=1719917111577'} className='flag-selected' alt='Dice' />
+                    <FontAwesomeIcon icon={faFlagCheckered} className='flag-selected' />
                 </div>
             )
         }

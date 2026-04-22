@@ -131,8 +131,8 @@ const CreateParty = props => {
             <div className='content'>
                 {
                     navingBack ? 
-                    (<img src="https://cdn.glitch.global/ebf12691-ad1e-4a83-81e2-641b9d7c5f64/back-button-active.png?v=1702137193420" alt="Back symbol" className="top-left clickable" style={{animation: 'button-press .75s'}} />) : 
-                    (<img src="https://cdn.glitch.global/ebf12691-ad1e-4a83-81e2-641b9d7c5f64/back-button.png?v=1702137134668" alt="Back symbol" className="top-left clickable" onClick={navBack} />)
+                    (<img src={back} alt="Back symbol" className="top-left clickable" style={{animation: 'button-press .75s'}} />) :
+                    (<img src={back} alt="Back symbol" className="top-left clickable" onClick={navBack} />)
                 }
                 <h2 className='title'>Create Party</h2>
                 <div className='create-divider'></div>
