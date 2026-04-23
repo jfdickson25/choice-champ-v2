@@ -1,25 +1,51 @@
 .party-home {
+    box-sizing: border-box;
     width: 100%;
-    grid-column: 3/16;
-    display: grid;
-    justify-items: center;
-    text-decoration: none;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 16px calc(env(safe-area-inset-bottom, 0) + 140px) 16px;
 }
 
-.party-img {
-    margin-top: 15vh;
-    margin-bottom: 10px;
-    grid-column: 2/17;
+.party-home-sticky-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    margin: 0 -16px;
+    padding: calc(env(safe-area-inset-top, 0) + 12px) 16px 12px 16px;
+    background-color: #312E2E;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.party-home-top-row {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
     width: 100%;
 }
 
-@media only screen and (min-width: 500px) {
-    .party-img {
-        width: 60%;
-        margin-top: 15vh;
-    }
+.party-home-title {
+    margin: 0;
+    padding: 0 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 22pt;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-align: center;
+}
 
-    .party-btn {
-        width: 50%;
-    }
+.party-home-body {
+    width: 100%;
+    margin-top: 0;
+}
+
+.offline-msg {
+    margin-top: 40px;
+    text-align: center;
+    color: #bbb;
+    font-size: 12pt;
 }

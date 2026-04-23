@@ -6,6 +6,17 @@
     box-sizing: border-box;
 }
 
+/* Sticky toolbar — sits directly under the MediaTab sticky header */
+.discover-toolbar {
+    position: sticky;
+    top: calc(env(safe-area-inset-top, 0) + 173px);
+    z-index: 9;
+    margin: 0 -16px;
+    padding: 0 16px 12px 16px;
+    background-color: #312E2E;
+    box-sizing: border-box;
+}
+
 /* Search bar (matches Collection detail search bar style) */
 .discover-search {
     box-sizing: border-box;
@@ -14,7 +25,7 @@
     gap: 10px;
     width: 100%;
     height: 40px;
-    margin: 0 0 12px 0;
+    margin: 0;
     padding: 0 14px;
     background-color: rgba(255, 255, 255, 0.06);
     border-radius: 10px;
@@ -75,7 +86,8 @@
     display: flex;
     gap: 4px;
     overflow-x: auto;
-    padding: 4px 0 12px 0;
+    margin-top: 12px;
+    padding: 0;
     scrollbar-width: none;
 }
 .discover-subtabs::-webkit-scrollbar {

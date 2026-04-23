@@ -66,46 +66,48 @@ const DiscoverFeed = ({ collectionType, color }) => {
 
     return (
         <div className='discover'>
-            <div className='discover-search'>
-                <SearchIcon size={18} strokeWidth={2} className='discover-search-icon' aria-hidden='true' />
-                <input
-                    className='discover-search-input'
-                    type='text'
-                    placeholder='Search'
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    autoComplete='off'
-                />
-                {query && (
-                    <button
-                        type='button'
-                        className='discover-search-clear'
-                        onClick={() => setQuery('')}
-                        aria-label='Clear search'
-                        style={{ color }}
-                    >
-                        <X size={18} strokeWidth={2.5} />
-                    </button>
+            <div className='discover-toolbar'>
+                <div className='discover-search'>
+                    <SearchIcon size={18} strokeWidth={2} className='discover-search-icon' aria-hidden='true' />
+                    <input
+                        className='discover-search-input'
+                        type='text'
+                        placeholder='Search'
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        autoComplete='off'
+                    />
+                    {query && (
+                        <button
+                            type='button'
+                            className='discover-search-clear'
+                            onClick={() => setQuery('')}
+                            aria-label='Clear search'
+                            style={{ color }}
+                        >
+                            <X size={18} strokeWidth={2.5} />
+                        </button>
+                    )}
+                </div>
+
+                {!isSearching && subtabs.length > 1 && (
+                    <div className='discover-subtabs'>
+                        {subtabs.map(tab => {
+                            const isActive = tab.key === activeSubtab;
+                            return (
+                                <button
+                                    key={tab.key}
+                                    className={`discover-subtab ${isActive ? 'discover-subtab-active' : ''}`}
+                                    style={isActive ? { color, borderColor: color } : undefined}
+                                    onClick={() => setActiveSubtab(tab.key)}
+                                >
+                                    {tab.label}
+                                </button>
+                            );
+                        })}
+                    </div>
                 )}
             </div>
-
-            {!isSearching && subtabs.length > 1 && (
-                <div className='discover-subtabs'>
-                    {subtabs.map(tab => {
-                        const isActive = tab.key === activeSubtab;
-                        return (
-                            <button
-                                key={tab.key}
-                                className={`discover-subtab ${isActive ? 'discover-subtab-active' : ''}`}
-                                style={isActive ? { color, borderColor: color } : undefined}
-                                onClick={() => setActiveSubtab(tab.key)}
-                            >
-                                {tab.label}
-                            </button>
-                        );
-                    })}
-                </div>
-            )}
 
             {isLoading && <DiscoverSkeleton color={color} />}
             {error && <DiscoverError error={error} color={color} />}

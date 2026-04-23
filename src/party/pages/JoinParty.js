@@ -1,91 +1,81 @@
 import React, { useRef, useState, useContext, useEffect } from 'react'
 import { BACKEND_URL } from '../../shared/config';
 import { useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import Button from '../../shared/components/FormElements/Button';
 import { AuthContext } from '../../shared/context/auth-context';
 
-import back from '../../shared/assets/img/back.svg';
-
 import './JoinParty.css';
 
-const JoinParty = (props) => {
+const JoinParty = ({ embedded = false }) => {
     const auth = useContext(AuthContext);
-
-    // Enum for the error state 0 = no error, 1 = join code must be 4 digits, 2 = party does not exist
     const [errorMessage, setErrorMessage] = useState('');
-    const [navingBack, setNavingBack] = useState(false);
 
-    let navigate = useNavigate();
+    const navigate = useNavigate();
     const inputRef = useRef();
 
     useEffect(() => {
-        auth.showFooterHandler(true);
-    }, [auth]);
+        if(!embedded) auth.showFooterHandler(true);
+    }, [auth, embedded]);
 
     const navToPartyWait = () => {
-        // Grab the join code from the input and validate it is 4 digits if it is 4 digits, navigate to the party page if it is not 4 digits, display an error message
         const joinCode = inputRef.current.value;
 
         if(joinCode.length === 4) {
-            fetch(`${BACKEND_URL}/party/exists/${joinCode}`,
-            {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if(data.code) {
-                    // Navigate to the party page
-                    navigate(`/party/wait/${data.code}`);
-                }
-                else {
-                    // Display an error message
-                    setErrorMessage(data.errorMsg);
-                }
-            })
-            .catch(err => {
-                console.log(err);
-            });
-        }
-        else {
-            // Display an error message
+            fetch(`${BACKEND_URL}/party/exists/${joinCode}`)
+                .then(response => response.json())
+                .then(data => {
+                    if(data.code) {
+                        navigate(`/party/wait/${data.code}`);
+                    } else {
+                        setErrorMessage(data.errorMsg);
+                    }
+                })
+                .catch(err => console.log(err));
+        } else {
             setErrorMessage('Join code must be 4 digits');
         }
     }
 
     const changeHandler = (event) => {
-        const value = event.target.value;
-
-        inputRef.current.value = value;
+        inputRef.current.value = event.target.value;
     }
 
-    const navBack = () => {
-        setNavingBack(true);
+    const navBack = () => navigate('/');
 
-        setTimeout(() => {
-            setNavingBack(false);
-            navigate('/party');
-        }, 1000);
-    }
+    const form = (
+        <div className='join-party'>
+            <p className='join-party-subtitle'>Enter a 4-digit code to join a session</p>
 
-  return (
-    <div className='content'>
-        {
-            navingBack ? 
-            (<img src={back} alt="Back symbol" className="top-left clickable" style={{animation: 'button-press .75s'}} />) :
-            (<img src={back} alt="Back symbol" className="top-left clickable" onClick={navBack} />)
-        }
-        <h2 className='title'>Join Party</h2>
-        <img src={`${process.env.PUBLIC_URL}/img/Choice-Champ-Join-Party-Img.png`} className="join-img" alt='Join Code'/>
-        <div id='join-party-page'>
-            <input className='text-input' type="number" min="0" max="9999" placeholder="Join Code" ref={inputRef} onChange={changeHandler} />
-            <Button className="join-btn" onClick={navToPartyWait}>Join Party</Button>
-            <p className='join-party-error-msg'>{errorMessage}</p>
+            <img src={`${process.env.PUBLIC_URL}/img/Choice-Champ-Join-Party-Img.png`} className="join-img" alt='Join Code'/>
+
+            <div className='join-party-form'>
+                <input className='text-input' type="number" min="0" max="9999" placeholder="Join Code" ref={inputRef} onChange={changeHandler} />
+                <Button className="join-btn" backgroundColor="#000" color="#fff" onClick={navToPartyWait}>Join Party</Button>
+                {errorMessage && <p className='join-party-error-msg'>{errorMessage}</p>}
+            </div>
         </div>
-    </div>
-  )
+    );
+
+    if(embedded) {
+        return form;
+    }
+
+    return (
+        <div className='content join-party-standalone'>
+            <div className='page-topbar'>
+                <button className="icon-btn" onClick={navBack} aria-label="Back">
+                    <ArrowLeft size={22} strokeWidth={1.75} />
+                </button>
+            </div>
+
+            <header className='join-party-header'>
+                <h1 className='join-party-title'>Join Party</h1>
+            </header>
+
+            {form}
+        </div>
+    );
 }
 
 export default JoinParty;

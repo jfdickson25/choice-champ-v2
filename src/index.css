@@ -108,6 +108,7 @@ button {
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
   border-radius: 10px !important;
   color: #e8e8e8 !important;
+  min-width: 180px !important;
 }
 
 .collection-menu-item {
@@ -209,6 +210,13 @@ button {
   display: block;
   cursor: pointer;
   transition: ease-in-out;
+}
+
+.page-topbar {
+  display: flex;
+  align-items: center;
+  padding-top: 12px;
+  padding-bottom: 4px;
 }
 
 .title {

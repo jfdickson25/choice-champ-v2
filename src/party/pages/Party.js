@@ -8,7 +8,7 @@ import Loading from '../../shared/components/Loading';
 import { AuthContext } from '../../shared/context/auth-context';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faStar, faFlagCheckered } from '@fortawesome/free-solid-svg-icons';
-import back from '../../shared/assets/img/back.svg';
+import { ArrowLeft } from 'lucide-react';
 import dice from '../../shared/assets/img/dices.png';
 
 import './Party.css';
@@ -40,7 +40,6 @@ const Party = ({ socket }) => {
     const [randomSelected, setRandomSelected] = useState(false);
     const [finishEarly, setFinishEarly] = useState(false);
     const [finished, setFinished] = useState(false);
-    const [navingBack, setNavingBack] = useState(false);
     const [newCollectionName, setNewCollectionName] = useState('');
     const [newCollectionSaving, setNewCollectionSaving] = useState(false);
     const [newCollectionCreated, setNewCollectionCreated] = useState(false);
@@ -508,39 +507,19 @@ const Party = ({ socket }) => {
         socket.emit('user-not-ready-remote', code);
     }
 
-    const navToParty = () => {
+    const navToParty = async () => {
         if(userType === 'owner' && collectionItems.length > 1) {
-            // Make a fetch request to the backend to get all the collectionItems for the party
-            fetch(`${BACKEND_URL}/party/${code}`,
-            {
+            await fetch(`${BACKEND_URL}/party/${code}`, {
                 method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            })
-            .then(response => {
-                setNavingBack(true);
-
-                setTimeout(() => {
-                    setNavingBack(false);
-                    socket.emit('leave-room', code);
-                    socket.emit('party-remote-deleted', code);
-                    // Redirect to the home page
-                    navigate('/party');
-                }, 1000);
+                headers: { 'Content-Type': 'application/json' }
             });
+            socket.emit('leave-room', code);
+            socket.emit('party-remote-deleted', code);
+        } else {
+            socket.emit('user-leave-party', code);
+            socket.emit('leave-room', code);
         }
-        else {
-            setNavingBack(true);
-
-            setTimeout(() => {
-                setNavingBack(false);
-                socket.emit('user-leave-party', code);
-                socket.emit('leave-room', code);
-                navigate('/party');
-            }, 1000);
-
-        }
+        navigate('/party');
     }
 
     const selectRandom = async () => {
@@ -703,11 +682,11 @@ const Party = ({ socket }) => {
   return (
     <div className='content'>
         { (collectionItems.length === 1 || finished) && ( <Confetti height={Math.max( document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight ) } width={window.innerWidth} style={{zIndex: -1}}/> )}
-        {
-            navingBack ? 
-            (<img src={back} alt="Back symbol" className="top-left clickable" style={{animation: 'button-press .75s'}} />) :
-            (<img src={back} alt="Back symbol" className="top-left clickable" onClick={navToParty} />)
-        }
+        <div className='page-topbar'>
+            <button className="icon-btn" onClick={navToParty} aria-label="Back">
+                <ArrowLeft size={22} strokeWidth={1.75} />
+            </button>
+        </div>
         { (userType === 'owner' && collectionItems.length > 1 && !finished) ? (
             <div className='votes-needed-section'>
                 <p className='votes-needed-title'>Votes Needed</p>

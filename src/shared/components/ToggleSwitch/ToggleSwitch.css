@@ -1,0 +1,32 @@
+.toggle-switch {
+    position: relative;
+    flex-shrink: 0;
+    width: 46px;
+    height: 26px;
+    border-radius: 999px;
+    background-color: rgba(255, 255, 255, 0.18);
+    transition: background-color 150ms ease-out;
+    cursor: pointer;
+    padding: 0;
+    border: none;
+}
+
+.toggle-switch:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.toggle-switch-knob {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: #fff;
+    transition: transform 150ms ease-out;
+}
+
+.toggle-switch.is-on .toggle-switch-knob {
+    transform: translateX(20px);
+}

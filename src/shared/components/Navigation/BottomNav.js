@@ -1,6 +1,6 @@
 import React, { useState, useTransition, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Clapperboard, Gamepad2, Dices, User } from 'lucide-react';
+import { Clapperboard, Gamepad2, Dices, PartyPopper } from 'lucide-react';
 
 import RetroTv from '../Icons/RetroTv';
 import './BottomNav.css';
@@ -11,7 +11,7 @@ const ICON_STROKE = 1.75;
 const tabs = [
     { to: '/collections/movie', Icon: Clapperboard, color: '#FCB016', key: 'movie' },
     { to: '/collections/tv',    Icon: RetroTv,      color: '#F04C53', key: 'tv' },
-    { to: '/profile',           Icon: User,         color: '#FCB016', key: 'profile' },
+    { to: '/party',             Icon: PartyPopper,  color: '#A855F7', key: 'party' },
     { to: '/collections/board', Icon: Dices,        color: '#45B859', key: 'board' },
     { to: '/collections/game',  Icon: Gamepad2,     color: '#2482C5', key: 'game' },
 ];
@@ -33,7 +33,7 @@ const BottomNav = () => {
     const handleClick = (e, to) => {
         if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
         e.preventDefault();
-        if (committedPath === to || committedPath.startsWith(to + '/')) return;
+        if (committedPath === to) return;
         setClickedPath(to);
         startTransition(() => navigate(to));
     };

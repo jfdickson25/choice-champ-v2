@@ -13,34 +13,27 @@ const Button = props => {
                 props.onClick();
             }, 1000);
         }
+    };
+
+    const style = {};
+    if (props.backgroundColor) style.backgroundColor = props.backgroundColor;
+    if (props.color) style.color = props.color;
+    if (bounce) {
+        style.animation = 'button-press .75s';
+        if (!props.backgroundColor) style.backgroundColor = '#dd9b14';
     }
 
     return (
-        <React.Fragment>
-            { 
-                bounce ? (
-                    <button 
-                        type={props.type} 
-                        disabled={props.disabled}
-                        className={`primary-btn ${props.className || ''}`.trim()}
-                        style={ props.backgroundColor ? {animation: 'button-press .75s', backgroundColor: `${props.backgroundColor}`} : {animation: 'button-press .75s', backgroundColor: '#dd9b14' }}
-                    >
-                        {props.children}
-                    </button>
-                ) : (
-                    <button 
-                        type={props.type} 
-                        disabled={props.disabled}
-                        onClick={action}
-                        className={`primary-btn ${props.className || ''}`.trim()}
-                        style={ props.backgroundColor ? {backgroundColor: `${props.backgroundColor}`} : null }
-                    >
-                        {props.children}
-                    </button>
-
-            )}
-        </React.Fragment>
+        <button
+            type={props.type}
+            disabled={props.disabled}
+            onClick={bounce ? undefined : action}
+            className={`primary-btn ${props.className || ''}`.trim()}
+            style={style}
+        >
+            {props.children}
+        </button>
     );
-}
+};
 
 export default Button;

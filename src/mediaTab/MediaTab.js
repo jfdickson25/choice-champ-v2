@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { BACKEND_URL } from '../shared/config';
 import { useNavigate, useParams } from 'react-router-dom';
-import { MoreVertical, Check, Plus, UsersRound, GripVertical } from 'lucide-react';
+import { MoreVertical, Check, Plus, GripVertical, User } from 'lucide-react';
 import { Dialog, Menu, MenuItem } from '@mui/material';
 
 import SegmentedToggle from '../shared/components/SegmentedToggle/SegmentedToggle';
@@ -110,9 +110,9 @@ const MediaTab = () => {
         closeKebab();
     };
 
-    const handleStartParty = () => {
+    const handleGoToProfile = () => {
         closeKebab();
-        navigate('/party/createParty');
+        navigate('/profile');
     };
 
     const handleReorderStart = () => {
@@ -240,18 +240,22 @@ const MediaTab = () => {
                 transformOrigin={{ vertical: 'top', horizontal: 'right' }}
                 PaperProps={{ className: 'collection-menu-paper' }}
             >
-                <MenuItem onClick={handleNewCollection} className='collection-menu-item'>
-                    <Plus size={18} strokeWidth={2} style={{ marginRight: 12 }} />
-                    New collection
+                <MenuItem onClick={handleGoToProfile} className='collection-menu-item'>
+                    <User size={18} strokeWidth={2} style={{ marginRight: 12 }} />
+                    Profile
                 </MenuItem>
-                <MenuItem onClick={handleStartParty} className='collection-menu-item'>
-                    <UsersRound size={18} strokeWidth={2} style={{ marginRight: 12 }} />
-                    Start a party
-                </MenuItem>
-                <MenuItem onClick={handleReorderStart} className='collection-menu-item'>
-                    <GripVertical size={18} strokeWidth={2} style={{ marginRight: 12 }} />
-                    Reorder
-                </MenuItem>
+                {view === 'collections' && (
+                    <MenuItem onClick={handleNewCollection} className='collection-menu-item'>
+                        <Plus size={18} strokeWidth={2} style={{ marginRight: 12 }} />
+                        New collection
+                    </MenuItem>
+                )}
+                {view === 'collections' && (
+                    <MenuItem onClick={handleReorderStart} className='collection-menu-item'>
+                        <GripVertical size={18} strokeWidth={2} style={{ marginRight: 12 }} />
+                        Reorder
+                    </MenuItem>
+                )}
             </Menu>
 
             <Dialog open={dialogOpen} onClose={handleCloseDialog} fullWidth maxWidth='lg'>

@@ -13,10 +13,11 @@ import { faXmark, faCircleInfo } from '@fortawesome/free-solid-svg-icons';
 
 import './Search.css';
 
+import { ArrowLeft } from 'lucide-react';
+
 import circle from '../../shared/assets/img/circle.png';
 import check from '../../shared/assets/img/check.png';
 import searchIcon from '../../shared/assets/img/search.svg';
-import back from '../../shared/assets/img/back.svg';
 import PlaceholderImg from '../../shared/components/PlaceholderImg'
 
 const Search = ({ socket }) => {
@@ -36,7 +37,6 @@ const Search = ({ socket }) => {
     const [items, setItems] = useState([]);
     const [collection, setCollection] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
-    const [navingBack, setNavingBack] = useState(false);
     const [noMatch, setNoMatch] = useState(false);
     const [open, setOpen] = useState(false);
     const [loadingInfo, setLoadingInfo] = useState(false);
@@ -420,22 +420,16 @@ const Search = ({ socket }) => {
         });
     }
 
-    const navBack = () => {
-        setNavingBack(true);
-        setTimeout(() => {
-            setNavingBack(false);
-            navigate(`/collections/${collectionType}/${collectionId}`);
-        }, 1000);
-    }
+    const navBack = () => navigate(`/collections/${collectionType}/${collectionId}`);
 
     return (
         <div className='content'>
             <ToastContainer />
-            {
-                navingBack ? 
-                (<img src={back} alt="Back symbol" className="top-left clickable" style={{animation: 'button-press .75s'}} />) :
-                (<img src={back} alt="Back symbol" className="top-left clickable" onClick={navBack} />)
-            }
+            <div className='page-topbar'>
+                <button className="icon-btn" onClick={navBack} aria-label="Back">
+                    <ArrowLeft size={22} strokeWidth={1.75} />
+                </button>
+            </div>
             <h2 className={`title color-${collectionType}`}>{collectionName}</h2>
             <div className='search-bar-container'>
                 <img src={searchIcon} alt='Search icon' className='search-icon' />

@@ -23,7 +23,6 @@ const Search = lazy(() => import('./collection/pages/Search'));
 const Auth = lazy(() => import('./user/pages/Auth'));
 const Welcome = lazy(() => import('./welcome/pages/Welcome'));
 const PartyHome = lazy(() => import('./party/pages/PartyHome'));
-const CreateParty = lazy(() => import('./party/pages/CreateParty'));
 const PartyWait = lazy(() => import('./party/pages/PartyWait'));
 const Party = lazy(() => import('./party/pages/Party'));
 const JoinParty = lazy(() => import('./party/pages/JoinParty'));
@@ -189,8 +188,6 @@ function App() {
           <Route path="/collections/:type/:id" element={<Collection socket={socket} />} exact />
           <Route path="/collections/:type/:id/add" element={<Search socket={socket} />} exact />
           <Route path="/party" element={<PartyHome />} exact />
-          <Route path="/party/createParty" element={<CreateParty />} exact />
-          <Route path="/party/joinParty" element={<JoinParty />} exact />
           <Route path="/party/wait/:code" element={<PartyWait socket={socket} />} exact />
           <Route path="/party/:code" element={<Party socket={socket} />} exact />
           <Route path="/profile" element={<Profile />} exact />

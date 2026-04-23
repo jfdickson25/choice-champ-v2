@@ -1,16 +1,23 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { BACKEND_URL } from '../../shared/config';
 import { useNavigate } from 'react-router-dom';
-
-import circle from '../../shared/assets/img/circle.png';
-import check from '../../shared/assets/img/check.png';
-import back from '../../shared/assets/img/back.svg';
+import { Clapperboard, Gamepad2, Dices } from 'lucide-react';
 
 import './CreateParty.css';
 import Button from '../../shared/components/FormElements/Button';
+import ToggleSwitch from '../../shared/components/ToggleSwitch/ToggleSwitch';
+import RetroTv from '../../shared/components/Icons/RetroTv';
+import CollectionCard from '../../collections/components/CollectionCard';
 
 import { AuthContext } from '../../shared/context/auth-context';
 import Loading from '../../shared/components/Loading';
+
+const MEDIA_TYPES = [
+    { key: 'movie', label: 'Movies',      color: '#FCB016', Icon: Clapperboard },
+    { key: 'tv',    label: 'TV Shows',    color: '#F04C53', Icon: RetroTv },
+    { key: 'board', label: 'Board Games', color: '#45B859', Icon: Dices },
+    { key: 'game',  label: 'Video Games', color: '#2482C5', Icon: Gamepad2 },
+];
 
 const CreateParty = props => {
     const auth = useContext(AuthContext);
@@ -22,211 +29,191 @@ const CreateParty = props => {
     const [secretMode, setSecretMode] = useState(false);
     const [includeWatched, setIncludeWatched] = useState(false);
     const [superChoice, setSuperChoice] = useState(false);
-    const [navingBack, setNavingBack] = useState(false);
     const [activeMediaType, setActiveMediaType] = useState('movie');
     const [collectionTypeColor, setCollectionTypeColor] = useState('#FCB016');
 
-    const [pressingMovie, setPressingMovie] = useState(false);
-    const [pressingTv, setPressingTv] = useState(false);
-    const [pressingGame, setPressingGame] = useState(false);
-    const [pressingBoard, setPressingBoard] = useState(false);
-
-    let navigate = useNavigate();
+    const navigate = useNavigate();
 
     useEffect(() => {
-        auth.showFooterHandler(true);
-        // Make a fetch post request to collections with the userId and setCollections to the response
-        fetch(`${BACKEND_URL}/collections/movie/${auth.userId}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(res => res.json())
-        .then(data => {
-            setCollections(data.collections);
-            setIsLoading(false);
-        })
-    }, [auth]);
+        fetch(`${BACKEND_URL}/collections/movie/${auth.userId}`)
+            .then(res => res.json())
+            .then(data => {
+                setCollections(data.collections);
+                setIsLoading(false);
+            });
+    }, [auth.userId]);
 
-    const addRemoveItem = (itemId) => {
-        if(selectAlert) {
-            setSelectAlert(false);
-        }
+    const loadCollections = (type) => {
+        setIsLoading(true);
+        setMediaType(type);
+        fetch(`${BACKEND_URL}/collections/${type}/${auth.userId}`)
+            .then(res => res.json())
+            .then(data => {
+                setSelectAlert(false);
+                setCollections(data.collections);
+                setIsLoading(false);
+            });
+    };
 
-        // Find the item in the array and toggle the selected value
-        const updatedCollections = collections.map(collection => {
-            if(collection._id === itemId) {
-                collection.selected = !collection.selected;
-            }
-            return collection;
-        });
+    const selectMediaType = (type) => {
+        if(type === activeMediaType) return;
+        const media = MEDIA_TYPES.find(m => m.key === type);
+        setActiveMediaType(type);
+        setCollectionTypeColor(media.color);
+        loadCollections(type);
+    };
 
-        setCollections(updatedCollections);
-    }
+    const toggleCollectionSelection = (collectionId) => {
+        if(selectAlert) setSelectAlert(false);
+        setCollections(prev =>
+            prev.map(collection =>
+                collection._id === collectionId
+                    ? { ...collection, selected: !collection.selected }
+                    : collection
+            )
+        );
+    };
 
     const navToPartyWait = () => {
-        const selectedCollections = collections.filter(collection => collection.selected);
-
-        if (selectedCollections.length === 0) {
+        const selected = collections.filter(c => c.selected);
+        if(selected.length === 0) {
             setSelectAlert(true);
             return;
         }
-
-        const collectionIds = selectedCollections.map(collection => collection._id);
-
         fetch(`${BACKEND_URL}/party`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                    collections: collectionIds,
-                    mediaType: mediaType,
-                    secretMode: secretMode,
-                    includeWatched: includeWatched,
-                    superChoice: superChoice,
-                    owner: auth.userId
+                collections: selected.map(c => c._id),
+                mediaType,
+                secretMode,
+                includeWatched,
+                superChoice,
+                owner: auth.userId
             })
         })
-        .then(res => {
-            return res.json();
-        })
-        .then(data => {
-            // Route to the party page
-            navigate(`/party/wait/${data.partyCode}`);
-        });
-    }
-
-    const navBack = () => {
-        setNavingBack(true);
-        setTimeout(() => {
-            setNavingBack(false);
-            navigate('/party');
-        }, 1000);
-    }
-
-    const mediaTypeHandler = (type) => {
-
-        setIsLoading(true);
-        setMediaType(type);
-
-        // Make a fetch post request to collections with the userId and setCollections to the response
-        fetch(`${BACKEND_URL}/collections/${type}/${auth.userId}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
         .then(res => res.json())
-        .then(data => {
-            setSelectAlert(false);
-            setCollections(data.collections);
-            setIsLoading(false);
-        })
-    }
+        .then(data => navigate(`/party/wait/${data.partyCode}`));
+    };
+
+    const nonEmptyCollections = collections.filter(c => Array.isArray(c.items) && c.items.length > 0);
 
     return (
-        <React.Fragment>
-            <div className='content'>
-                {
-                    navingBack ? 
-                    (<img src={back} alt="Back symbol" className="top-left clickable" style={{animation: 'button-press .75s'}} />) :
-                    (<img src={back} alt="Back symbol" className="top-left clickable" onClick={navBack} />)
-                }
-                <h2 className='title'>Create Party</h2>
-                <div className='create-divider'></div>
-                <p className='option-text'>Secret Mode</p>
-                <img className='option-img' src={ secretMode ? check : circle } alt='' onClick={() => { setSecretMode(!secretMode) }} />
-                <p className='option-subtext'>Party members will not see each other's votes</p>                
-                <p className='option-text'>Include Watched</p>
-                <img className='option-img' src={ includeWatched ? check : circle } alt='' onClick={() => { setIncludeWatched(!includeWatched) }} />
-                <p className='option-subtext'>Include items that have been marked as watched/played</p>  
-                <p className='option-text'>Super Choice Mode</p>
-                <img className='option-img' src={ superChoice ? check : circle } alt='' onClick={() => { setSuperChoice(!superChoice) }} />
-                <p className='option-subtext'>
-                    Super choice mode allows for more passionate voting. Double tap to star a choice to ensure it moves on to the next round.
-                    All party members will see the star in subsequent rounds and it cannot be starred again.
-                </p>
-                <button 
-                    className={`media-type-btn ${ activeMediaType === 'movie' ? 'active-movie-fill' : 'movie'}`} 
-                    style={ pressingMovie ? {animation: 'button-press .75s', marginTop: '30px'} : { marginTop: '30px' }} 
-                    onClick={() => { 
-                        setActiveMediaType('movie');
-                        setCollectionTypeColor('#FCB016');
-                        setPressingMovie(true);
-                        mediaTypeHandler('movie') 
-                        setTimeout(() => {
-                            setPressingMovie(false);
-                        }, 750);
-                    }}
-                >
-                        Movies
-                </button>
-                <button 
-                    className={`media-type-btn ${ activeMediaType === 'tv' ? 'active-tv-fill' : 'tv'}`} 
-                    style={ pressingTv ? {animation: 'button-press .75s'} : null}
-                    onClick={() => { 
-                        setActiveMediaType('tv');
-                        setCollectionTypeColor('#FF4D4D');
-                        setPressingTv(true);
-                        mediaTypeHandler('tv');
-                        setTimeout(() => {
-                            setPressingTv(false);
-                        }, 750); 
-                    }}
-                >
-                    TV Shows
-                </button>
-                <button 
-                    className={`media-type-btn ${ activeMediaType === 'game' ? 'active-game-fill' : 'game'}`} 
-                    style={ pressingGame ? {animation: 'button-press .75s'} : null}
-                    onClick={() => { 
-                        setActiveMediaType('game');
-                        setCollectionTypeColor('#2482C5');
-                        setPressingGame(true);
-                        mediaTypeHandler('game');
-                        setTimeout(() => {
-                            setPressingGame(false);
-                        }, 750);
-                    }}
-                >
-                    Video Games
-                </button>
-                <button 
-                    className={`media-type-btn ${ activeMediaType === 'board' ? 'active-board-fill' : 'board'}`} 
-                    style={ pressingBoard ? {animation: 'button-press .75s', marginBottom: '30px'} : { marginBottom: '30px' }}
-                    onClick={() => { 
-                        setActiveMediaType('board');
-                        setCollectionTypeColor('#45B859');
-                        setPressingBoard(true);
-                        mediaTypeHandler('board');
-                        setTimeout(() => {
-                            setPressingBoard(false);
-                        }, 750);
-                    }}
-                >
-                    Board Games
-                </button>
-                
-                <div className='create-party-collections'>
-                    
-                { isLoading ? <Loading color={collectionTypeColor} type='beat' className='list-loading-create' size={20} /> : 
-                        collections.length > 0 ?
-                            collections.map(collection => (   
-                                collection.items.length > 0 &&
-                                <div key={collection._id} className={`create-party-collection ${collection.selected ? `active-${collection.type}-fill` : ''}`} onClick={() => { addRemoveItem(collection._id) }}>
-                                    <div className={`create-party-collection-name`}>{collection.name}</div>
-                                </div>
-                        ))
-                        : <div className='no-collections-found'>No collections found for this media type</div>
-                }
+        <div className='create-party'>
+            <section className='create-party-section'>
+                <h2 className='create-party-section-title'>Options</h2>
+                <div className='create-options-card'>
+                    <div className='create-option'>
+                        <div className='create-option-row'>
+                            <p className='create-option-text'>Secret Mode</p>
+                            <ToggleSwitch
+                                checked={secretMode}
+                                onChange={setSecretMode}
+                                activeColor={collectionTypeColor}
+                                ariaLabel='Secret Mode'
+                            />
+                        </div>
+                        <p className='create-option-subtext'>Party members will not see each other's votes</p>
+                    </div>
+                    <div className='create-option'>
+                        <div className='create-option-row'>
+                            <p className='create-option-text'>Include Watched</p>
+                            <ToggleSwitch
+                                checked={includeWatched}
+                                onChange={setIncludeWatched}
+                                activeColor={collectionTypeColor}
+                                ariaLabel='Include Watched'
+                            />
+                        </div>
+                        <p className='create-option-subtext'>Include items that have been marked as watched/played</p>
+                    </div>
+                    <div className='create-option'>
+                        <div className='create-option-row'>
+                            <p className='create-option-text'>Super Choice Mode</p>
+                            <ToggleSwitch
+                                checked={superChoice}
+                                onChange={setSuperChoice}
+                                activeColor={collectionTypeColor}
+                                ariaLabel='Super Choice Mode'
+                            />
+                        </div>
+                        <p className='create-option-subtext'>
+                            Double-tap a choice to star it. Starred choices always advance to the next round.
+                        </p>
+                    </div>
                 </div>
-                <Button type="button" className='create-party-btn' onClick={navToPartyWait}>Create Party</Button>
-                { selectAlert && <div className='select-alert'>Please select at least one collection</div> }
-            </div>
-        </React.Fragment>
+            </section>
+
+            <section className='create-party-section'>
+                <h2 className='create-party-section-title'>Media Type</h2>
+                <div className='create-media-grid'>
+                    {MEDIA_TYPES.map(({ key, label, color, Icon }) => {
+                        const isActive = activeMediaType === key;
+                        return (
+                            <button
+                                key={key}
+                                type='button'
+                                className={`create-media-tile ${isActive ? 'is-active' : ''}`}
+                                style={isActive
+                                    ? { backgroundColor: color, borderColor: color }
+                                    : { borderColor: 'rgba(255, 255, 255, 0.12)' }}
+                                onClick={() => selectMediaType(key)}
+                            >
+                                <Icon
+                                    size={28}
+                                    strokeWidth={1.75}
+                                    color={isActive ? '#111' : color}
+                                />
+                                <span
+                                    className='create-media-tile-label'
+                                    style={{ color: isActive ? '#111' : '#fff' }}
+                                >
+                                    {label}
+                                </span>
+                            </button>
+                        );
+                    })}
+                </div>
+            </section>
+
+            <section className='create-party-section'>
+                <h2 className='create-party-section-title'>Collections</h2>
+                {isLoading ? (
+                    <div className='create-collections-loading'>
+                        <Loading color={collectionTypeColor} type='beat' size={20} />
+                    </div>
+                ) : nonEmptyCollections.length > 0 ? (
+                    <div className='create-collections-list'>
+                        {nonEmptyCollections.map(collection => (
+                            <CollectionCard
+                                key={collection._id}
+                                collection={collection}
+                                collectionsType={activeMediaType}
+                                color={collectionTypeColor}
+                                onSelect={toggleCollectionSelection}
+                                selected={!!collection.selected}
+                            />
+                        ))}
+                    </div>
+                ) : (
+                    <p className='create-collections-empty'>No collections found for this media type</p>
+                )}
+            </section>
+
+            <Button
+                type='button'
+                className='create-party-submit'
+                onClick={navToPartyWait}
+                backgroundColor='#000'
+                color='#fff'
+            >
+                Create Party
+            </Button>
+            {selectAlert && <p className='create-party-alert'>Please select at least one collection</p>}
+        </div>
     );
-}
+};
+
+export { CreateParty };
 
 export default CreateParty;

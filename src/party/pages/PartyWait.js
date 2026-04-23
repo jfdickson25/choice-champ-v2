@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useContext, useRef }  from 'react';
 import { BACKEND_URL } from '../../shared/config';
 import { useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { AuthContext } from '../../shared/context/auth-context';
 
 import Loading from '../../shared/components/Loading';
 import Button from '../../shared/components/FormElements/Button';
 
-import back from '../../shared/assets/img/back.svg';
 import dice from '../../shared/assets/img/dices.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faStar, faFlag, faTrophy } from '@fortawesome/free-solid-svg-icons';
@@ -24,7 +24,6 @@ const PartyWait = ({ socket }) => {
 
     // Variable to store the number of members in the party
     const [memberCount, setMemberCount] = useState(0);
-    const [navingBack, setNavingBack] = useState(false);
     const [userType, setUserType] = useState('guest');
     const [superChoiceEnabled, setSuperChoiceEnabled] = useState(false);
     // Using useRef to store the memberCount so that it doesn't get reset on re-render
@@ -134,60 +133,32 @@ const PartyWait = ({ socket }) => {
 
     const navBack = async () => {
         if(userType === 'owner') {
-            // Make a fetch request to the backend delete the party
-            fetch(`${BACKEND_URL}/party/${code}`,
-            {
+            await fetch(`${BACKEND_URL}/party/${code}`, {
                 method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            })
-            .then(response => {
-                setNavingBack(true);
-                setTimeout(() => {
-                    setNavingBack(false);
-                    // Emit event to delete the party for the other users so they can be redirected to the
-                    // party page
-                    socket.emit('party-remote-deleted', `waiting${code}`);
-                    socket.emit('leave-room', `waiting${code}`);
-                    navigate('/party');
-                }, 1000);
+                headers: { 'Content-Type': 'application/json' }
             });
-        }
-        else {
+            socket.emit('party-remote-deleted', `waiting${code}`);
             socket.emit('leave-room', `waiting${code}`);
-            // For guests if they leave decrement the member count for the other users
+        } else {
+            socket.emit('leave-room', `waiting${code}`);
             socket.emit('member-remote-decrement', `waiting${code}`);
-
-            // Make a post request to the backend to remove the user from the party
-            await fetch(`${BACKEND_URL}/party/remove-member/${code}`,
-            {
+            await fetch(`${BACKEND_URL}/party/remove-member/${code}`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    partyCode: code,
-                })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ partyCode: code })
             });
-
-            setNavingBack(true);
-            
-            setTimeout(() => {
-                setNavingBack(false);
-                navigate('/party');
-            }, 1000);
         }
+        navigate('/party');
     }
 
 
   return (
     <div className='content' style={{paddingBottom: '0px'}}>
-        {
-            navingBack ? 
-            (<img src={back} alt="Back symbol" className="top-left clickable" style={{animation: 'button-press .75s'}} />) :
-            (<img src={back} alt="Back symbol" className="top-left clickable" onClick={navBack} />)
-        }
+        <div className='page-topbar'>
+            <button className="icon-btn" onClick={navBack} aria-label="Back">
+                <ArrowLeft size={22} strokeWidth={1.75} />
+            </button>
+        </div>
         <FontAwesomeIcon
             icon={faTrophy}
             id="waiting-img"

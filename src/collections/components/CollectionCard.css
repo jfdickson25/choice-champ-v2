@@ -67,3 +67,23 @@
     background-color: rgba(255, 255, 255, 0.08);
     display: block;
 }
+
+.collection-card-selectable {
+    font-family: inherit;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.collection-card-check {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    background-color: transparent;
+    transition: background-color 150ms ease-out, border-color 150ms ease-out;
+}
