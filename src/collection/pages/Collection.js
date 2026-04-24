@@ -3,7 +3,8 @@ import { BACKEND_URL } from '../../shared/config';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../shared/context/auth-context';
 import Loading from '../../shared/components/Loading';
-import { ArrowLeft, Check, MoreVertical, Pencil, Share2, ListOrdered, Trash, ArrowDownAZ, ArrowDownZA, ArrowDownWideNarrow, ArrowUpWideNarrow, Eye, Gamepad2, Dices, SlidersHorizontal, Layers, EyeOff, GripVertical, Search, X, Columns2, Columns3, Columns4 } from 'lucide-react';
+import { ArrowLeft, Check, MoreVertical, Pencil, Share2, ListOrdered, Trash, ArrowDownAZ, ArrowDownZA, ArrowDownWideNarrow, ArrowUpWideNarrow, Eye, Gamepad2, Dices, SlidersHorizontal, Layers, EyeOff, GripVertical, Search, X, Columns2, Columns3, Columns4, Clapperboard } from 'lucide-react';
+import RetroTv from '../../shared/components/Icons/RetroTv';
 import { Menu, MenuItem, Dialog } from '@mui/material';
 
 import './Collection.css';
@@ -400,7 +401,30 @@ const Collection = ({ socket }) => {
                         </div>
                     </div>
 
-                    <h2 className={`collection-title color-${collectionType}`}>{collectionName}</h2>
+                    {(() => {
+                        const TypeIcon = collectionType === 'movie' ? Clapperboard
+                            : collectionType === 'tv' ? RetroTv
+                            : collectionType === 'game' ? Gamepad2
+                            : Dices;
+                        const total = items.length;
+                        const watchedCount = items.filter(i => i.watched).length;
+                        const noun = collectionType === 'tv' ? 'show'
+                            : collectionType === 'movie' ? 'movie'
+                            : 'game';
+                        const verb = (collectionType === 'game' || collectionType === 'board') ? 'played' : 'watched';
+                        const subtitle = total === 0
+                            ? 'Empty collection'
+                            : `${total} ${noun}${total === 1 ? '' : 's'}${watchedCount > 0 ? ` · ${watchedCount} ${verb}` : ''}`;
+                        return (
+                            <div className='collection-title-block'>
+                                <div className='collection-title-row'>
+                                    <TypeIcon size={26} strokeWidth={1.75} color={collectionTypeColor} />
+                                    <h2 className={`collection-title color-${collectionType}`}>{collectionName}</h2>
+                                </div>
+                                <p className='collection-subtitle'>{subtitle}</p>
+                            </div>
+                        );
+                    })()}
                 </div>
 
                 {isLoading ? (
