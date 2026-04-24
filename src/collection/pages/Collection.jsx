@@ -384,14 +384,6 @@ const Collection = ({ socket }) => {
                                     <p className='collection-subtitle'>{subtitle}</p>
                                 </div>
                                 <div className='collection-top-row-right'>
-                                    {!isEdit && (
-                                        <button className='icon-btn sort-btn' onClick={openSort} aria-label='Sort and filter'>
-                                            <SlidersHorizontal size={20} strokeWidth={2.5} />
-                                            {isFiltering && (
-                                                <span className='sort-btn-badge' style={{ backgroundColor: collectionTypeColor }} />
-                                            )}
-                                        </button>
-                                    )}
                                     {isEdit ? (
                                         <button className='icon-btn' onClick={exitManage} aria-label='Done'>
                                             <Check size={24} strokeWidth={3} />
@@ -454,6 +446,20 @@ const Collection = ({ socket }) => {
                     </div>
                 )}
 
+                {!isEdit && (
+                    <button
+                        type='button'
+                        className='floating-filter'
+                        onClick={openSort}
+                        aria-label='Sort and filter'
+                    >
+                        <SlidersHorizontal size={20} strokeWidth={2.5} />
+                        {isFiltering && (
+                            <span className='floating-filter-badge' style={{ backgroundColor: collectionTypeColor }} />
+                        )}
+                    </button>
+                )}
+
                 <div className='floating-search'>
                     <Search size={18} strokeWidth={2} className='floating-search-icon' aria-hidden='true' />
                     <input
@@ -461,6 +467,8 @@ const Collection = ({ socket }) => {
                         placeholder='Search'
                         value={query}
                         onChange={e => setQuery(e.target.value)}
+                        onFocus={() => auth.showFooterHandler(false)}
+                        onBlur={() => auth.showFooterHandler(true)}
                     />
                     {query !== '' && (
                         <button

@@ -1,8 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Search as SearchIcon, X } from 'lucide-react';
+import { Search as SearchIcon, SlidersHorizontal, X } from 'lucide-react';
 
 import { SUBTABS, fetchDiscover, fetchSearch, fetchGamePosters } from './discoverApi';
+import SortFilterPanel from '../shared/components/SortFilterPanel/SortFilterPanel';
+import { AuthContext } from '../shared/context/auth-context';
 import './Discover.css';
 
 const SUPPORTED_TYPES = ['movie', 'tv', 'game', 'board'];
@@ -20,6 +22,7 @@ const Discover = ({ collectionType, color }) => {
 
 const DiscoverFeed = ({ collectionType, color }) => {
     const navigate = useNavigate();
+    const auth = useContext(AuthContext);
     const [searchParams, setSearchParams] = useSearchParams();
     const subtabs = SUBTABS[collectionType];
 
@@ -33,9 +36,12 @@ const DiscoverFeed = ({ collectionType, color }) => {
     const [items, setItems] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [filterAnchor, setFilterAnchor] = useState(null);
 
     const trimmedQuery = debouncedQuery.trim();
     const isSearching = trimmedQuery.length > 0;
+    const hasMultipleSubtabs = subtabs.length > 1;
+    const isFilteringNonDefault = activeSubtab !== subtabs[0].key;
 
     useEffect(() => {
         const id = setTimeout(() => setDebouncedQuery(query), 300);
@@ -91,26 +97,27 @@ const DiscoverFeed = ({ collectionType, color }) => {
         navigate(`/items/${collectionType}/${item.id}`);
     };
 
+    const handleSearchFocus = () => auth.showFooterHandler(false);
+    const handleSearchBlur = () => auth.showFooterHandler(true);
+
+    useEffect(() => {
+        return () => auth.showFooterHandler(true);
+    }, [auth]);
+
     return (
         <div className='discover'>
-            {!isSearching && subtabs.length > 1 && (
-                <div className='discover-toolbar'>
-                    <div className='discover-subtabs'>
-                        {subtabs.map(tab => {
-                            const isActive = tab.key === activeSubtab;
-                            return (
-                                <button
-                                    key={tab.key}
-                                    className={`discover-subtab ${isActive ? 'discover-subtab-active' : ''}`}
-                                    style={isActive ? { color, borderColor: color } : undefined}
-                                    onClick={() => setActiveSubtab(tab.key)}
-                                >
-                                    {tab.label}
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
+            {!isSearching && hasMultipleSubtabs && (
+                <button
+                    type='button'
+                    className='floating-filter'
+                    onClick={(e) => setFilterAnchor(e.currentTarget)}
+                    aria-label='Filter'
+                >
+                    <SlidersHorizontal size={20} strokeWidth={2.5} />
+                    {isFilteringNonDefault && (
+                        <span className='floating-filter-badge' style={{ backgroundColor: color }} />
+                    )}
+                </button>
             )}
 
             <div className='floating-search'>
@@ -121,6 +128,8 @@ const DiscoverFeed = ({ collectionType, color }) => {
                     placeholder='Search'
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
+                    onFocus={handleSearchFocus}
+                    onBlur={handleSearchBlur}
                     autoComplete='off'
                 />
                 {query && (
@@ -135,6 +144,17 @@ const DiscoverFeed = ({ collectionType, color }) => {
                     </button>
                 )}
             </div>
+
+            <SortFilterPanel
+                anchorEl={filterAnchor}
+                open={Boolean(filterAnchor)}
+                onClose={() => setFilterAnchor(null)}
+                filterOptions={subtabs.map(t => ({ value: t.key, label: t.label }))}
+                filterValue={activeSubtab}
+                onFilterChange={(v) => { setActiveSubtab(v); setFilterAnchor(null); }}
+                filterLabel='Category'
+                activeColor={color}
+            />
 
             {isLoading && <DiscoverSkeleton color={color} />}
             {error && <DiscoverError error={error} color={color} />}

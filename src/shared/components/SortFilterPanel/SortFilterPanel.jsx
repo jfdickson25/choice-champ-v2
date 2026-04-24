@@ -11,12 +11,15 @@ const SortFilterPanel = ({
     sortOptions = [],
     sortValue,
     onSortChange,
+    sortLabel = 'Sort',
     filterOptions = [],
     filterValue,
     onFilterChange,
+    filterLabel = 'Filter',
     viewOptions = [],
     viewValue,
     onViewChange,
+    viewLabel = 'View',
     activeColor = '#FCB016',
 }) => {
     return (
@@ -31,7 +34,7 @@ const SortFilterPanel = ({
             <div className='sort-filter-panel'>
                 {sortOptions.length > 0 && (
                     <div className='sort-filter-column'>
-                        <div className='sort-filter-header'>Sort</div>
+                        <div className='sort-filter-header'>{sortLabel}</div>
                         {sortOptions.map(opt => (
                             <OptionRow
                                 key={opt.value}
@@ -45,7 +48,7 @@ const SortFilterPanel = ({
                 )}
                 {filterOptions.length > 0 && (
                     <div className='sort-filter-column'>
-                        <div className='sort-filter-header'>Filter</div>
+                        <div className='sort-filter-header'>{filterLabel}</div>
                         {filterOptions.map(opt => (
                             <OptionRow
                                 key={opt.value}
@@ -59,7 +62,7 @@ const SortFilterPanel = ({
                 )}
                 {viewOptions.length > 0 && (
                     <div className='sort-filter-column'>
-                        <div className='sort-filter-header'>View</div>
+                        <div className='sort-filter-header'>{viewLabel}</div>
                         {viewOptions.map(opt => (
                             <OptionRow
                                 key={opt.value}

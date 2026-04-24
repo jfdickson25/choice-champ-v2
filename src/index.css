@@ -301,6 +301,43 @@ button {
   gap: 10px;
 }
 
+.floating-filter {
+  position: fixed;
+  right: 16px;
+  bottom: calc(env(safe-area-inset-bottom, 0) + 132px);
+  z-index: 21;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(20, 20, 20, 0.7);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  backdrop-filter: blur(18px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 150ms ease-out;
+}
+
+.floating-filter:hover {
+  background-color: rgba(40, 40, 40, 0.85);
+}
+
+.floating-filter-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 2px solid rgba(20, 20, 20, 0.9);
+  box-sizing: content-box;
+  pointer-events: none;
+}
+
 .floating-action {
   width: 48px;
   height: 48px;

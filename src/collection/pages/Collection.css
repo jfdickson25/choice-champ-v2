@@ -80,22 +80,6 @@
     text-overflow: ellipsis;
 }
 
-.sort-btn {
-    position: relative;
-}
-
-.sort-btn-badge {
-    position: absolute;
-    top: 6px;
-    right: 6px;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    border: 2px solid #000;
-    box-sizing: content-box;
-    pointer-events: none;
-}
-
 /* ---------- Dialog-specific extras ------------------------------------
    Shared dialog pattern (paper, title, buttons, inputs, etc.) lives in
    src/index.css under .cc-dialog-*. Only the share-code pill is unique
