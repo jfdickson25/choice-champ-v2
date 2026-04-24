@@ -81,13 +81,15 @@ function App() {
     if (!vv) return;
     const root = document.documentElement;
 
-    // Only track the visual viewport while an input/textarea has focus.
-    // Otherwise iOS fires spurious resize/scroll events during normal page
-    // scrolling (address bar animations, rubber-banding) that would jitter
-    // anything using --cc-keyboard-inset.
+    // Track the visual viewport only while a text input is focused, and
+    // freeze the computed inset once the keyboard is up. Otherwise iOS's
+    // address bar animations during scroll would change window.innerHeight
+    // and jitter anything positioned off --cc-keyboard-inset.
     let focused = false;
+    let keyboardOpen = false;
 
     const reset = () => {
+      keyboardOpen = false;
       root.style.setProperty('--cc-keyboard-inset', '0px');
       root.classList.remove('cc-keyboard-open');
     };
@@ -95,8 +97,14 @@ function App() {
     const update = () => {
       if (!focused) return;
       const inset = Math.max(0, window.innerHeight - vv.offsetTop - vv.height);
-      root.style.setProperty('--cc-keyboard-inset', `${inset}px`);
-      root.classList.toggle('cc-keyboard-open', inset > 40);
+      const isOpen = inset > 40;
+      if (isOpen && !keyboardOpen) {
+        keyboardOpen = true;
+        root.style.setProperty('--cc-keyboard-inset', `${inset}px`);
+        root.classList.add('cc-keyboard-open');
+      } else if (!isOpen && keyboardOpen) {
+        reset();
+      }
     };
 
     const isTextInput = (el) => !!el && (
