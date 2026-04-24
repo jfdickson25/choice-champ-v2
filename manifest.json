@@ -1,0 +1,29 @@
+{
+  "name": "Choice Champ",
+  "short_name": "Choice Champ",
+  "description": "Choice Champ is a web app that helps groups make media choices.",
+  "start_url": "/choice-champ",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#312E2E",
+  "theme_color": "#312E2E",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "img/icon.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "img/icon.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

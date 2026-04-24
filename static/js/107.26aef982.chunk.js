@@ -1,0 +1,2 @@
+"use strict";(self.webpackChunkchoice_champ=self.webpackChunkchoice_champ||[]).push([[107],{5957:function(c,a,e){e(2791);a.Z=e.p+"static/media/movie-night.1aface444ddc9a05ab9027d5809137f3.svg"},5651:function(c,a,e){e(2791);a.Z=e.p+"static/media/watch.4405c17b752edca726e2a932c393f198.svg"}}]);
+//# sourceMappingURL=107.26aef982.chunk.js.map

@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "me.glitch.choice_champ.twa",
+        "sha256_cert_fingerprints": ["65:B2:0F:8A:4B:39:1D:11:0B:1A:75:85:3C:2E:74:3F:C4:5A:17:95:E0:E5:FD:7D:02:82:F6:48:BF:78:36:4A"]
+      }
+    }]

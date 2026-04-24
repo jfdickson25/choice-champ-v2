@@ -1,0 +1,8 @@
+/*! showdown v 2.1.0 - 21-04-2022 */
+
+/**
+ * @license lucide-react v1.8.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
