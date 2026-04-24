@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState, useContext, useRef } from 'react';
 import { BACKEND_URL } from '../../shared/config';
+import { api } from '../../shared/lib/api';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../shared/context/auth-context';
 import Loading from '../../shared/components/Loading';
@@ -85,14 +86,13 @@ const Collection = ({ socket }) => {
     const handleDeleteCancel = () => setDeleteOpen(false);
     const handleDeleteConfirm = () => {
         if (deleteConfirm !== 'DELETE') return;
-        fetch(`${BACKEND_URL}/collections/${collectionType}/${auth.userId}/${collectionId}`, {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-        }).then(() => {
-            socket.emit('leave-room', collectionId);
-            setDeleteOpen(false);
-            navigate(`/collections/${collectionType}`);
-        });
+        api(`/collections/${collectionType}/${auth.userId}/${collectionId}`, { method: 'DELETE' })
+            .then(() => {
+                socket.emit('leave-room', collectionId);
+                setDeleteOpen(false);
+                navigate(`/collections/${collectionType}`);
+            })
+            .catch(err => console.log(err));
     };
     const handleRenameCancel = () => setRenameOpen(false);
     const handleRenameSave = () => {
@@ -102,14 +102,15 @@ const Collection = ({ socket }) => {
             setRenameOpen(false);
             return;
         }
-        fetch(`${BACKEND_URL}/collections/name/${collectionId}`, {
+        api(`/collections/name/${collectionId}`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name: trimmed }),
-        }).then(() => {
-            setCollectionName(trimmed);
-            setRenameOpen(false);
-        });
+        })
+            .then(() => {
+                setCollectionName(trimmed);
+                setRenameOpen(false);
+            })
+            .catch(err => console.log(err));
     };
     const handleCopyCode = async () => {
         try {
@@ -163,14 +164,7 @@ const Collection = ({ socket }) => {
             setCollectionTypeColor('#45B859');
         }
 
-        // Make a fetch get request to get all the items in a collection
-        fetch(`${BACKEND_URL}/collections/items/${collectionId}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(res => res.json())
+        api(`/collections/items/${collectionId}`)
         .then(data => {
             let ordered = data.items;
             const savedOrderRaw = localStorage.getItem(customOrderKey);
@@ -269,19 +263,13 @@ const Collection = ({ socket }) => {
     const exitManage = () => setIsEdit(false);
 
     const removeItem = (id) => {
-        // Make a fetch delete request to remove an item from a collection
-        fetch(`${BACKEND_URL}/collections/items/${collectionId}/${id}`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(res => {
+        api(`/collections/items/${collectionId}/${id}`, { method: 'DELETE' })
+        .then(() => {
             itemsRef.current = itemsRef.current.filter(item => item._id !== id);
             setItems(itemsRef.current);
-            // Emit to the server that an item has been removed
             socket.emit('remove-remote-item', id, collectionId);
-        });
+        })
+        .catch(err => console.log(err));
     }
 
     const navBack = () => {

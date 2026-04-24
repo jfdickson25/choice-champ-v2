@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useRef, useState } from 'react';
-import { BACKEND_URL } from '../shared/config';
+import { api } from '../shared/lib/api';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Check, Plus, GripVertical, User } from 'lucide-react';
 import { Dialog } from '@mui/material';
@@ -70,11 +70,7 @@ const MediaTab = () => {
 
     useEffect(() => {
         setIsLoading(true);
-        fetch(`${BACKEND_URL}/collections/${type}/${auth.userId}`, {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
-        })
-            .then(res => res.json())
+        api(`/collections/${type}/${auth.userId}`)
             .then(data => {
                 let ordered = Array.isArray(data.collections) ? data.collections : [];
                 const savedOrderRaw = localStorage.getItem(orderKey);
@@ -92,6 +88,10 @@ const MediaTab = () => {
                     } catch {}
                 }
                 setCollections(ordered);
+                setIsLoading(false);
+            })
+            .catch(err => {
+                console.log(err);
                 setIsLoading(false);
             });
     }, [auth.userId, type, orderKey]);
@@ -133,12 +133,10 @@ const MediaTab = () => {
             setNameErrorText('Collection with that name already exists');
             return;
         }
-        fetch(`${BACKEND_URL}/collections/${auth.userId}`, {
+        api(`/collections/${auth.userId}`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name: nameValue, type }),
         })
-            .then(res => res.json())
             .then(data => {
                 setCollections(prev => [...prev, data.collection]);
             })
@@ -153,20 +151,14 @@ const MediaTab = () => {
             setJoinError('Code must be 5 digits long');
             return;
         }
-        fetch(`${BACKEND_URL}/collections/join/${codeValue}/${type}/${auth.userId}`, {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
-        })
-            .then(res => res.json())
+        api(`/collections/join/${codeValue}/${type}/${auth.userId}`)
             .then(data => {
-                if (data.errMsg) {
-                    setJoinError(data.errMsg);
-                    return;
-                }
                 setCollections(prev => [...prev, data.collection]);
                 handleCloseDialog();
             })
-            .catch(err => console.log(err));
+            .catch(err => {
+                setJoinError(err.message || 'Unable to join collection');
+            });
     };
 
     const handleReorder = (newOrder) => {
@@ -180,15 +172,9 @@ const MediaTab = () => {
         <div className='media-tab'>
             <div className='media-tab-sticky-header'>
                 <div className='media-tab-top-row'>
-                    {isReorder ? (
-                        <button className='icon-btn' onClick={exitReorder} aria-label='Done'>
-                            <Check size={24} strokeWidth={3} />
-                        </button>
-                    ) : (
-                        <button className='icon-btn' onClick={() => navigate('/profile')} aria-label='Profile'>
-                            <User size={22} strokeWidth={2} />
-                        </button>
-                    )}
+                    <button className='icon-btn' onClick={() => navigate('/profile')} aria-label='Profile'>
+                        <User size={22} strokeWidth={2} />
+                    </button>
                 </div>
                 <h1 className='media-tab-title' style={{ color: config.color }}>{config.title}</h1>
                 {!isReorder && (
@@ -211,7 +197,7 @@ const MediaTab = () => {
                         onReorder={handleReorder}
                     />
                 ) : view === 'discover' ? (
-                    <Discover collectionType={type} color={config.color} />
+                    <Discover key={type} collectionType={type} color={config.color} />
                 ) : (
                     <Collections
                         collections={collections}
@@ -221,25 +207,37 @@ const MediaTab = () => {
                 )}
             </div>
 
-            {view === 'collections' && !isReorder && (
+            {view === 'collections' && (
                 <div className='floating-actions'>
+                    {isReorder ? (
+                        <button
+                            type='button'
+                            className='floating-action'
+                            onClick={exitReorder}
+                            aria-label='Done reordering'
+                            style={{ color: config.color }}
+                        >
+                            <Check size={22} strokeWidth={2.5} />
+                        </button>
+                    ) : (
+                        <button
+                            type='button'
+                            className='floating-action'
+                            onClick={handleReorderStart}
+                            aria-label='Reorder collections'
+                            style={{ color: config.color }}
+                        >
+                            <GripVertical size={22} strokeWidth={2.5} />
+                        </button>
+                    )}
                     <button
                         type='button'
                         className='floating-action'
                         onClick={handleNewCollection}
                         aria-label='New collection'
-                        style={{ color: config.color }}
+                        style={{ color: config.color, visibility: isReorder ? 'hidden' : 'visible' }}
                     >
                         <Plus size={22} strokeWidth={2.5} />
-                    </button>
-                    <button
-                        type='button'
-                        className='floating-action'
-                        onClick={handleReorderStart}
-                        aria-label='Reorder collections'
-                        style={{ color: config.color }}
-                    >
-                        <GripVertical size={22} strokeWidth={2.5} />
                     </button>
                 </div>
             )}

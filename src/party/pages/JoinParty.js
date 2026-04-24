@@ -38,7 +38,9 @@ const JoinParty = ({ embedded = false }) => {
     }
 
     const changeHandler = (event) => {
-        inputRef.current.value = event.target.value;
+        const next = event.target.value.replace(/\D/g, '').slice(0, 4);
+        if(next !== event.target.value) event.target.value = next;
+        inputRef.current.value = next;
     }
 
     const navBack = () => navigate('/');
@@ -50,7 +52,7 @@ const JoinParty = ({ embedded = false }) => {
             <img src={`${process.env.PUBLIC_URL}/img/Choice-Champ-Join-Party-Img.png`} className="join-img" alt='Join Code'/>
 
             <div className='join-party-form'>
-                <input className='text-input' type="number" min="0" max="9999" placeholder="Join Code" ref={inputRef} onChange={changeHandler} />
+                <input className='text-input' type="text" inputMode="numeric" pattern="[0-9]*" maxLength={4} placeholder="Join Code" ref={inputRef} onChange={changeHandler} />
                 <Button className="join-btn" backgroundColor="#000" color="#fff" onClick={navToPartyWait}>Join Party</Button>
                 {errorMessage && <p className='join-party-error-msg'>{errorMessage}</p>}
             </div>

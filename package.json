@@ -12,6 +12,7 @@
     "@fortawesome/free-solid-svg-icons": "^6.4.2",
     "@fortawesome/react-fontawesome": "^0.2.0",
     "@mui/material": "^5.14.8",
+    "@supabase/supabase-js": "^2.104.1",
     "gh-pages": "^6.3.0",
     "lucide-react": "^1.8.0",
     "react": "^18.2.0",
@@ -40,6 +41,8 @@
   },
   "scripts": {
     "start": "react-scripts start",
+    "server": "npm --prefix server start",
+    "dev": "concurrently -n web,api -c cyan,magenta \"npm start\" \"npm run server\"",
     "build": "react-scripts build",
     "eject": "react-scripts eject",
     "predeploy": "npm run build",
@@ -62,5 +65,10 @@
   },
   "engines": {
     "node": "16.x"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "dotenv": "^17.4.2",
+    "glob": "^13.0.6"
   }
 }

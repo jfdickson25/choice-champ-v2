@@ -6,6 +6,7 @@ import Showdown from 'showdown';
 import Loading from '../../shared/components/Loading';
 import { AuthContext } from '../../shared/context/auth-context';
 import { BACKEND_URL } from '../../shared/config';
+import { api } from '../../shared/lib/api';
 import './ItemDetails.css';
 
 const TYPE_COLORS = {
@@ -73,8 +74,7 @@ const ItemDetails = () => {
                 if(!cancelled) setLoadingDetails(false);
             });
 
-        fetch(`${BACKEND_URL}/collections/collectionList/${collectionType}/${itemId}/${auth.userId}`)
-            .then(res => res.json())
+        api(`/collections/collectionList/${collectionType}/${itemId}/${auth.userId}`)
             .then(data => {
                 if(cancelled) return;
                 setCollectionList([...data.collections]);
@@ -93,26 +93,23 @@ const ItemDetails = () => {
         if(collectionType !== 'board' && collectionType !== 'game') {
             tempId = parseInt(tempId);
         }
-        fetch(`${BACKEND_URL}/collections/items/${addCollectionId}`, {
+        api(`/collections/items/${addCollectionId}`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify([{ title: details.title, id: tempId, poster: details.poster }])
         })
-        .then(res => res.json())
         .then(data => {
             setCollectionList(prev => {
                 const next = [...prev];
                 if(next[index]) next[index].itemId = data.newItems[0]._id;
                 return next;
             });
-        });
+        })
+        .catch(err => console.log(err));
     };
 
     const removeFromCollection = (removeCollectionId, removeItemId) => {
-        fetch(`${BACKEND_URL}/collections/items/${removeCollectionId}/${removeItemId}`, {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' }
-        });
+        api(`/collections/items/${removeCollectionId}/${removeItemId}`, { method: 'DELETE' })
+            .catch(err => console.log(err));
     };
 
     const toggleCollection = (collection, index) => {
@@ -131,9 +128,8 @@ const ItemDetails = () => {
         if(!collectionId || !mongoItemId) return;
         const nextWatched = !watched;
         setWatched(nextWatched);
-        fetch(`${BACKEND_URL}/collections/items/${collectionId}/${mongoItemId}`, {
+        api(`/collections/items/${collectionId}/${mongoItemId}`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ watched: nextWatched })
         }).catch(err => console.log(err));
     };

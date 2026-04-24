@@ -14,10 +14,8 @@ import Loading from './shared/components/Loading';
 import BottomNav from './shared/components/Navigation/BottomNav';
 
 import { AuthContext } from './shared/context/auth-context';
+import { supabase } from './shared/lib/supabase';
 
-// Lazy loading is a way to load a component only when it is needed. 
-// This is useful for components that are not needed right away, but are needed later on. 
-// This can help with performance by only loading what is needed at the time.
 const Collection = lazy(() => import('./collection/pages/Collection'));
 const ItemDetails = lazy(() => import('./collection/pages/ItemDetails'));
 const Auth = lazy(() => import('./user/pages/Auth'));
@@ -37,116 +35,70 @@ const MediaTabByType = () => {
 };
 
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userId, setUserId] = useState(null);
   const [username, setUsername] = useState(null);
   const [socket, setSocket] = useState(null);
 
   const [loading, setLoading] = useState(true);
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
-  const [animateInstallPrompt, setAnimateInstallPrompt] = useState(false); // Used to animate the install prompt when it is shown
+  const [animateInstallPrompt, setAnimateInstallPrompt] = useState(false);
   let defeferredPrompt = useRef(null);
 
   const [showFooter, setShowFooter] = useState(false);
 
-  useEffect(() => {
-    const storedUserId = localStorage.getItem('userId');
-    const storedUsername = localStorage.getItem('username');
-    const neverShowAppInstallBanner = localStorage.getItem('neverShowAppInstallBanner');
+  const isLoggedIn = userId !== null;
 
-    if(storedUserId) {
-      fetch(`${BACKEND_URL}/user/${storedUserId}`)
-      .then(response => {
-        if(response.status === 200) {
-          return response.json();
-        }
-        return null;
-      })
-      .then(body => {
-        if(body) {
-          setUserId(storedUserId);
-          setUsername(body.username);
-          localStorage.setItem('username', body.username);
-          setIsLoggedIn(true);
-          setLoading(false);
-
-          if(!neverShowAppInstallBanner) {
-            window.addEventListener('beforeinstallprompt', (e) => {
-              // Prevent the mini-infobar from appearing on mobile
-              e.preventDefault();
-              // Stash the event so it can be triggered later.
-              defeferredPrompt.current = e;
-
-              setShowInstallPrompt(true);
-
-              setTimeout(() => {
-                setAnimateInstallPrompt(true);
-              }, 1000);
-            });
-          }
-        }
-      })
-      .catch(err => {
-        console.log(err);
-        localStorage.removeItem('userId');
-        localStorage.removeItem('username');
-        setLoading(false);
-      });
-
-      if(storedUsername) {
-        setUsername(storedUsername);
-      }
-    } else {
-      setIsLoggedIn(false);
-      setLoading(false);
-
-      if(!neverShowAppInstallBanner) {
-        window.addEventListener('beforeinstallprompt', (e) => {
-          // Prevent the mini-infobar from appearing on mobile
-          e.preventDefault();
-          // Stash the event so it can be triggered later.
-          defeferredPrompt.current = e;
-
-          setShowInstallPrompt(true);
-
-          setTimeout(() => {
-            setAnimateInstallPrompt(true);
-          }, 1000);
-        });
-      }
+  const applyProfile = useCallback(async (session) => {
+    if (!session) {
+      setUserId(null);
+      setUsername(null);
+      return;
     }
+    setUserId(session.user.id);
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('username')
+      .eq('id', session.user.id)
+      .maybeSingle();
+    setUsername(profile?.username ?? session.user.email);
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!mounted) return;
+      applyProfile(session).finally(() => mounted && setLoading(false));
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      applyProfile(session);
+    });
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, [applyProfile]);
+
+  useEffect(() => {
+    const neverShowAppInstallBanner = localStorage.getItem('neverShowAppInstallBanner');
+    if (neverShowAppInstallBanner) return;
+    const handler = (e) => {
+      e.preventDefault();
+      defeferredPrompt.current = e;
+      setShowInstallPrompt(true);
+      setTimeout(() => setAnimateInstallPrompt(true), 1000);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
   useEffect(() => {
     const newSocket = io(BACKEND_URL);
     setSocket(newSocket);
-
     return () => newSocket.close();
   }, []);
 
-  const login = useCallback(() => {
-    setIsLoggedIn(true);
-  }, [])
-
-  const logout = useCallback(() => {
-    setIsLoggedIn(false);
-    setUserId(null);
-    setUsername(null);
-    localStorage.removeItem('userId');
-    localStorage.removeItem('username');
-  }, []);
-
-  const userIdSetter = useCallback((id) => {
-    setUserId(id);
-  }, []);
-
-  const usernameSetter = useCallback((name) => {
-    setUsername(name);
-    if(name) {
-      localStorage.setItem('username', name);
-    } else {
-      localStorage.removeItem('username');
-    }
+  const logout = useCallback(async () => {
+    await supabase.auth.signOut();
   }, []);
 
   const showFooterHandler = useCallback((show) => {
@@ -154,33 +106,30 @@ function App() {
   }, []);
 
   const authValue = useMemo(
-    () => ({ isLoggedIn, userId, username, userIdSetter, usernameSetter, login, logout, showFooterHandler }),
-    [isLoggedIn, userId, username, userIdSetter, usernameSetter, login, logout, showFooterHandler]
+    () => ({ isLoggedIn, userId, username, logout, showFooterHandler }),
+    [isLoggedIn, userId, username, logout, showFooterHandler]
   );
 
   const installApp = () => {
     setShowInstallPrompt(false);
-
     defeferredPrompt.current.prompt();
     defeferredPrompt.current.userChoice.then((choiceResult) => {
-      if(choiceResult.outcome === 'accepted') {
+      if (choiceResult.outcome === 'accepted') {
         neverShowInstallPrompt();
       } else {
         console.log('User dismissed the install prompt');
       }
     });
-  }
+  };
 
   const neverShowInstallPrompt = () => {
     setShowInstallPrompt(false);
     localStorage.setItem('neverShowAppInstallBanner', true);
-  }
+  };
 
   let routes;
-  if(isLoggedIn) {
+  if (isLoggedIn) {
     routes = (
-      // Using Suspense inside a switch caused issues with redirecting. Solution found in this stack overflow article:
-      // https://stackoverflow.com/questions/62193855/react-lazy-loaded-route-makes-redirecting-non-matching-routes-to-404-not-work
       <Suspense fallback={<Loading color='#FCB016' className='page-loading' size={100} />}>
         <Routes>
           <Route path="/welcome/info" element={<Welcome />} exact />
@@ -196,7 +145,7 @@ function App() {
           <Route path="*" element={<Navigate to="/collections/movie" />} />
         </Routes>
       </Suspense>
-    )
+    );
   } else {
     routes = (
       <Suspense fallback={<Loading color='#FCB016' />}>
@@ -208,15 +157,13 @@ function App() {
             <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </Suspense>
-    )
+    );
   }
 
   let footer;
-
-  if(showFooter && isLoggedIn) {
-    footer = <BottomNav />
+  if (showFooter && isLoggedIn) {
+    footer = <BottomNav />;
   }
-
 
   return (
     <AuthContext.Provider value={authValue}>
@@ -226,14 +173,12 @@ function App() {
           {!loading && routes}
           {
             (!loading && showInstallPrompt) && (
-              <div id='download-banner' 
-                // If the install prompt is being animated, use transform to translateX 100vw with a transition of 2s
-                // Otherwise, use display: none
-                style={animateInstallPrompt && !isLoggedIn ? { transform: 'translateX(100vw)', transition: 'transform .5s ease-in-out', top: '0', bottom: 'unset' } : (isLoggedIn ? { transform: 'translateX(100vw)', transition: 'transform .5s ease-in-out', top: 'unset' } : null )}
+              <div id='download-banner'
+                style={animateInstallPrompt && !isLoggedIn ? { transform: 'translateX(100vw)', transition: 'transform .5s ease-in-out', top: '0', bottom: 'unset' } : (isLoggedIn ? { transform: 'translateX(100vw)', transition: 'transform .5s ease-in-out', top: 'unset' } : null)}
               >
                   <p id="install-prompt">Install Choice Champ?</p>
                   <p id="install-yes" onClick={installApp}>YES</p>
-                  <p id="install-later" onClick={() => {setShowInstallPrompt(false)}}>LATER</p>
+                  <p id="install-later" onClick={() => { setShowInstallPrompt(false); }}>LATER</p>
                   <p id="install-never" onClick={neverShowInstallPrompt}>NEVER</p>
               </div>
             )

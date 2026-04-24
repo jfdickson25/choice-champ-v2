@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Search as SearchIcon, X } from 'lucide-react';
 
 import { SUBTABS, fetchDiscover, fetchSearch, fetchGamePosters } from './discoverApi';
@@ -20,10 +20,16 @@ const Discover = ({ collectionType, color }) => {
 
 const DiscoverFeed = ({ collectionType, color }) => {
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
     const subtabs = SUBTABS[collectionType];
-    const [activeSubtab, setActiveSubtab] = useState(subtabs[0].key);
-    const [query, setQuery] = useState('');
-    const [debouncedQuery, setDebouncedQuery] = useState('');
+
+    const urlTab = searchParams.get('tab');
+    const urlQuery = searchParams.get('q') || '';
+    const initialSubtab = subtabs.some(t => t.key === urlTab) ? urlTab : subtabs[0].key;
+
+    const [activeSubtab, setActiveSubtab] = useState(initialSubtab);
+    const [query, setQuery] = useState(urlQuery);
+    const [debouncedQuery, setDebouncedQuery] = useState(urlQuery);
     const [items, setItems] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -35,6 +41,15 @@ const DiscoverFeed = ({ collectionType, color }) => {
         const id = setTimeout(() => setDebouncedQuery(query), 300);
         return () => clearTimeout(id);
     }, [query]);
+
+    useEffect(() => {
+        const next = new URLSearchParams(searchParams);
+        if (activeSubtab === subtabs[0].key) next.delete('tab'); else next.set('tab', activeSubtab);
+        if (trimmedQuery) next.set('q', trimmedQuery); else next.delete('q');
+        if (next.toString() !== searchParams.toString()) {
+            setSearchParams(next, { replace: true });
+        }
+    }, [activeSubtab, trimmedQuery, subtabs, searchParams, setSearchParams]);
 
     useEffect(() => {
         let cancelled = false;

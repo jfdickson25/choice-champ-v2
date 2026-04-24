@@ -9,18 +9,17 @@ import {
     Dices
 } from 'lucide-react';
 
-import { BACKEND_URL } from '../../shared/config';
+import { api } from '../../shared/lib/api';
 import { AuthContext } from '../../shared/context/auth-context';
 import RetroTv from '../../shared/components/Icons/RetroTv';
 import Button from '../../shared/components/FormElements/Button';
 
 import './Profile.css';
 
-const memberSinceFromId = (userId) => {
-    if(!userId || userId.length < 8) return null;
-    const seconds = parseInt(userId.substring(0, 8), 16);
-    if(Number.isNaN(seconds)) return null;
-    return new Date(seconds * 1000);
+const memberSinceFromIso = (iso) => {
+    if(!iso) return null;
+    const d = new Date(iso);
+    return Number.isNaN(d.getTime()) ? null : d;
 };
 
 const formatMemberFor = (since) => {
@@ -63,11 +62,8 @@ const Profile = () => {
 
     useEffect(() => {
         if(!auth.userId) return;
-        fetch(`${BACKEND_URL}/user/${auth.userId}`)
-            .then(res => res.ok ? res.json() : null)
-            .then(body => {
-                if(body) setStats(body);
-            })
+        api('/user/me')
+            .then(body => setStats(body))
             .catch(err => console.log(err));
     }, [auth.userId]);
 
@@ -77,16 +73,13 @@ const Profile = () => {
     };
 
     const deleteAccount = () => {
-        fetch(`${BACKEND_URL}/user/${auth.userId}`, {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' }
-        })
-        .then(() => auth.logout())
-        .catch(err => console.log(err));
+        api('/user/me', { method: 'DELETE' })
+            .then(() => auth.logout())
+            .catch(err => console.log(err));
     };
 
     const canDelete = auth.username && deleteConfirm === auth.username;
-    const memberSince = memberSinceFromId(auth.userId);
+    const memberSince = memberSinceFromIso(stats?.created_at);
     const memberFor = formatMemberFor(memberSince);
 
     return (
