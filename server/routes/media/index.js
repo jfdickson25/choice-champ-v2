@@ -470,9 +470,6 @@ router
             responseJson.results.sort((a, b) => {
                 return b.popularity - a.popularity;
             });
-        } else if (type === 'game') {
-            let response = await fetch(`https://www.giantbomb.com/api/games/?api_key=${process.env.GIANT_BOMB_API_KEY}&format=json&filter=name:${title}&page=${page}&limit=20`);
-            responseJson = await response.json();
         } else if (type === 'board') {
             // Limit search to 20 results
             const resp = await fetch(

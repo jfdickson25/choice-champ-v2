@@ -2,7 +2,7 @@
   "name": "Choice Champ",
   "short_name": "Choice Champ",
   "description": "Choice Champ is a web app that helps groups make media choices.",
-  "start_url": "/choice-champ-v2",
+  "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#312E2E",
