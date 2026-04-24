@@ -243,12 +243,12 @@ button {
   transition: background-color 150ms ease-out, box-shadow 150ms ease-out;
 }
 
-/* When the iOS keyboard is up, the bottom nav is already hidden, and we
-   re-anchor the search bar just above the visual-viewport bottom so it
-   stays pinned directly above the keyboard/accessory bar instead of
-   disappearing behind them. */
+/* When the keyboard is up the bottom nav is already hidden and the viewport
+   meta's `interactive-widget=resizes-content` shrinks the layout viewport
+   above the keyboard, so `bottom: 12px` is literally just above the
+   keyboard/accessory bar on iOS 17.4+ / Chrome Android 108+. */
 .cc-keyboard-open .floating-search {
-  bottom: calc(var(--cc-keyboard-inset, 0px) + 12px);
+  bottom: calc(env(safe-area-inset-bottom, 0) + 12px);
   transition: none;
 }
 

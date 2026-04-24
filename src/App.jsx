@@ -77,61 +77,28 @@ function App() {
   }, [applyProfile]);
 
   useEffect(() => {
-    const vv = window.visualViewport;
-    if (!vv) return;
+    // With `interactive-widget=resizes-content` in the viewport meta, iOS
+    // (17.4+) and Chrome Android (108+) shrink the layout viewport when the
+    // software keyboard opens — so `position: fixed; bottom: N` and
+    // `position: sticky; top: 0` both behave correctly without any JS.
+    // This effect just toggles a class so CSS can switch between
+    // nav-open and keyboard-open layouts.
     const root = document.documentElement;
-
-    // Track the visual viewport only while a text input is focused, and
-    // freeze the computed inset once the keyboard is up. Otherwise iOS's
-    // address bar animations during scroll would change window.innerHeight
-    // and jitter anything positioned off --cc-keyboard-inset.
-    let focused = false;
-    let keyboardOpen = false;
-
-    const reset = () => {
-      keyboardOpen = false;
-      root.style.setProperty('--cc-keyboard-inset', '0px');
-      root.classList.remove('cc-keyboard-open');
-    };
-
-    const update = () => {
-      if (!focused) return;
-      const inset = Math.max(0, window.innerHeight - vv.offsetTop - vv.height);
-      const isOpen = inset > 40;
-      if (isOpen && !keyboardOpen) {
-        keyboardOpen = true;
-        root.style.setProperty('--cc-keyboard-inset', `${inset}px`);
-        root.classList.add('cc-keyboard-open');
-      } else if (!isOpen && keyboardOpen) {
-        reset();
-      }
-    };
-
     const isTextInput = (el) => !!el && (
       el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable
     );
-
     const onFocusIn = (e) => {
       if (!isTextInput(e.target)) return;
-      focused = true;
-      update();
+      root.classList.add('cc-keyboard-open');
     };
-
     const onFocusOut = () => {
-      focused = false;
-      reset();
+      root.classList.remove('cc-keyboard-open');
     };
-
-    reset();
     document.addEventListener('focusin', onFocusIn);
     document.addEventListener('focusout', onFocusOut);
-    vv.addEventListener('resize', update);
-
     return () => {
       document.removeEventListener('focusin', onFocusIn);
       document.removeEventListener('focusout', onFocusOut);
-      vv.removeEventListener('resize', update);
-      root.style.removeProperty('--cc-keyboard-inset');
       root.classList.remove('cc-keyboard-open');
     };
   }, []);
