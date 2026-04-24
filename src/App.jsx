@@ -80,17 +80,49 @@ function App() {
     const vv = window.visualViewport;
     if (!vv) return;
     const root = document.documentElement;
+
+    // Only track the visual viewport while an input/textarea has focus.
+    // Otherwise iOS fires spurious resize/scroll events during normal page
+    // scrolling (address bar animations, rubber-banding) that would jitter
+    // anything using --cc-keyboard-inset.
+    let focused = false;
+
+    const reset = () => {
+      root.style.setProperty('--cc-keyboard-inset', '0px');
+      root.classList.remove('cc-keyboard-open');
+    };
+
     const update = () => {
+      if (!focused) return;
       const inset = Math.max(0, window.innerHeight - vv.offsetTop - vv.height);
       root.style.setProperty('--cc-keyboard-inset', `${inset}px`);
       root.classList.toggle('cc-keyboard-open', inset > 40);
     };
-    update();
+
+    const isTextInput = (el) => !!el && (
+      el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable
+    );
+
+    const onFocusIn = (e) => {
+      if (!isTextInput(e.target)) return;
+      focused = true;
+      update();
+    };
+
+    const onFocusOut = () => {
+      focused = false;
+      reset();
+    };
+
+    reset();
+    document.addEventListener('focusin', onFocusIn);
+    document.addEventListener('focusout', onFocusOut);
     vv.addEventListener('resize', update);
-    vv.addEventListener('scroll', update);
+
     return () => {
+      document.removeEventListener('focusin', onFocusIn);
+      document.removeEventListener('focusout', onFocusOut);
       vv.removeEventListener('resize', update);
-      vv.removeEventListener('scroll', update);
       root.style.removeProperty('--cc-keyboard-inset');
       root.classList.remove('cc-keyboard-open');
     };
