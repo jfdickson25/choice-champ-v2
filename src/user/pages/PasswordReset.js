@@ -55,7 +55,7 @@ const PasswordReset = () => {
     return (
         <div className='center'>
             <form onSubmit={handleSubmit(onSubmit)}>
-                <img src={`${process.env.PUBLIC_URL}/img/Logo/choice-champ-title.png`} alt="Choice Champ Logo" id="logo" />
+                <img src="/img/Logo/choice-champ-title.png" alt="Choice Champ Logo" id="logo" />
                 <div className='seperator' />
 
                 <div>

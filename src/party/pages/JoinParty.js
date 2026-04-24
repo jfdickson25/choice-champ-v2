@@ -42,7 +42,7 @@ const JoinParty = ({ embedded = false }) => {
         <div className='join-party'>
             <p className='join-party-subtitle'>Enter a 4-digit code to join a session</p>
 
-            <img src={`${process.env.PUBLIC_URL}/img/Choice-Champ-Join-Party-Img.png`} className="join-img" alt='Join Code'/>
+            <img src="/img/Choice-Champ-Join-Party-Img.png" className="join-img" alt='Join Code'/>
 
             <div className='join-party-form'>
                 <input className='text-input' type="text" inputMode="numeric" pattern="[0-9]*" maxLength={4} placeholder="Join Code" ref={inputRef} onChange={changeHandler} />

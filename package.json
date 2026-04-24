@@ -2,7 +2,6 @@
   "name": "choice-champ",
   "version": "0.1.0",
   "private": true,
-  "homepage": "/",
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
@@ -17,7 +16,6 @@
     "body-parser": "^2.2.2",
     "cors": "^2.8.6",
     "express": "^5.2.1",
-    "gh-pages": "^6.3.0",
     "lucide-react": "^1.8.0",
     "node-fetch": "^2.7.0",
     "react": "^18.2.0",
@@ -25,36 +23,18 @@
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.46.1",
     "react-router-dom": "^6.15.0",
-    "react-scripts": "5.0.1",
     "react-spinners": "^0.13.8",
     "react-swipeable": "^7.0.1",
     "react-toastify": "^9.1.3",
     "showdown": "^2.1.0",
-    "workbox-background-sync": "^7.0.0",
-    "workbox-broadcast-update": "^7.0.0",
-    "workbox-cacheable-response": "^7.0.0",
-    "workbox-core": "^7.0.0",
-    "workbox-expiration": "^7.0.0",
-    "workbox-google-analytics": "^7.0.0",
-    "workbox-navigation-preload": "^7.0.0",
-    "workbox-precaching": "^7.0.0",
-    "workbox-range-requests": "^7.0.0",
-    "workbox-routing": "^7.0.0",
-    "workbox-strategies": "^7.0.0",
-    "workbox-streams": "^7.0.0",
     "xml-js": "^1.6.11"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "start": "vite",
     "server": "npm --prefix server start",
     "dev": "concurrently -n web,api -c cyan,magenta \"npm start\" \"npm run server\"",
-    "build": "react-scripts build",
-    "eject": "react-scripts eject",
-    "predeploy": "npm run build",
-    "deploy": "gh-pages -d build"
-  },
-  "eslintConfig": {
-    "extends": "react-app"
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "browserslist": {
     "production": [
@@ -72,8 +52,10 @@
     "node": "24.x"
   },
   "devDependencies": {
+    "@vitejs/plugin-react-swc": "^4.3.0",
     "concurrently": "^9.2.1",
     "dotenv": "^17.4.2",
-    "glob": "^13.0.6"
+    "glob": "^13.0.6",
+    "vite": "^6.4.2"
   }
 }
