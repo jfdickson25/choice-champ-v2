@@ -76,6 +76,26 @@ function App() {
   }, [applyProfile]);
 
   useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const root = document.documentElement;
+    const update = () => {
+      const inset = Math.max(0, window.innerHeight - vv.offsetTop - vv.height);
+      root.style.setProperty('--cc-keyboard-inset', `${inset}px`);
+      root.classList.toggle('cc-keyboard-open', inset > 40);
+    };
+    update();
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    return () => {
+      vv.removeEventListener('resize', update);
+      vv.removeEventListener('scroll', update);
+      root.style.removeProperty('--cc-keyboard-inset');
+      root.classList.remove('cc-keyboard-open');
+    };
+  }, []);
+
+  useEffect(() => {
     const neverShowAppInstallBanner = localStorage.getItem('neverShowAppInstallBanner');
     if (neverShowAppInstallBanner) return;
     const handler = (e) => {
