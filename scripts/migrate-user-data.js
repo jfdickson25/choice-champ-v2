@@ -37,6 +37,7 @@ const KNOWN_USERS = {
     '644578bafbb5cae4dee6bae0': '26693c67-6e1d-4e96-86b8-e3c259891a10', // Jordan (jfdickson25@gmail.com)
     '64e6ca05f61f2867e6b5044f': 'db6eceb0-720f-47ee-b7e5-fc078121eea8', // Seth   (sethford09@gmail.com)
     '643b82b9270b5fbc90be1290': 'cf0e6cd1-ae58-423c-9ac3-0139dcd30541', // Kyle   (kyledickson7@gmail.com) — no invite email sent (rate limited)
+    '643b3ed1270b5fbc90bdf49a': '23c76767-602b-4a50-a84d-a2f0055de893', // Molly  (mollyfalck97@gmail.com)
 };
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
