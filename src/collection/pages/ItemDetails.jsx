@@ -23,6 +23,11 @@ const ItemDetails = () => {
     const navigate = useNavigate();
     const { type: collectionType, itemId } = useParams();
     const [searchParams] = useSearchParams();
+    // Collection context (when arriving from a collection grid). Used to
+    // write back a fresher poster to that collection_items row if /getInfo
+    // returns one that differs from what the grid had stored.
+    const collectionId = searchParams.get('cid');
+    const mongoItemId = searchParams.get('mid');
     // Poster URL passed from the source view (Discover or Collection grid)
     // so the detail view displays exactly what the user just tapped on,
     // sidestepping any TMDB poster-path drift between endpoints.
@@ -82,6 +87,21 @@ const ItemDetails = () => {
                     setProviders({});
                 }
                 setLoadingDetails(false);
+
+                // Lazy poster refresh: if we arrived from a collection grid
+                // (cid + mid in URL) and /getInfo's poster differs from the
+                // one the grid stored, write the fresher value back to the
+                // collection_items row and broadcast so the still-mounted
+                // grid swaps in the new image immediately.
+                const freshPoster = data.media.details && data.media.details.poster;
+                if (collectionId && mongoItemId && freshPoster && freshPoster !== passedPoster) {
+                    api(`/collections/items/${collectionId}/${mongoItemId}/poster`, {
+                        method: 'POST',
+                        body: JSON.stringify({ poster: freshPoster }),
+                    })
+                        .then(() => broadcast(`collection:${collectionId}`, 'poster', { id: mongoItemId, poster: freshPoster }))
+                        .catch(err => console.log('poster refresh skipped:', err.message));
+                }
             })
             .catch(err => {
                 console.log(err);
@@ -219,11 +239,17 @@ const ItemDetails = () => {
                 </div>
             ) : (
                 <React.Fragment>
-                    {(passedPoster || details.poster) && (
+                    {(details.poster || passedPoster) && (
                         <div className='item-details-poster-wrap'>
+                            {/* Prefer the fresh /getInfo poster once it loads;
+                                show passedPoster instantly so there's no blank
+                                while the API call is in flight. The keyed img
+                                fades in when src changes so a stale-to-fresh
+                                swap doesn't pop. */}
                             <img
+                                key={details.poster || passedPoster}
                                 className='item-details-poster'
-                                src={passedPoster || details.poster}
+                                src={details.poster || passedPoster}
                                 alt={`${details.title} poster`}
                             />
                         </div>

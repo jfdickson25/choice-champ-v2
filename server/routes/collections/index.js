@@ -143,125 +143,19 @@ router
 
         res.json({ newItems: newRows.map(itemToLegacy) });
     })
-    // Refresh poster URLs for every item in a collection from the
-    // upstream source APIs. Manual user action — bound to the kebab
-    // menu's "Refresh posters" entry. Returns the updated items plus
-    // a summary of how many actually changed.
-    .post('/refresh-posters/:collectionId', async (req, res) => {
-        const { collectionId } = req.params;
-
-        const { data: collection, error: cErr } = await supabase
-            .from('collections')
-            .select('id, type, collection_items(id, item_id, poster)')
-            .eq('id', collectionId)
-            .maybeSingle();
-        if (cErr) return res.status(500).json({ errMsg: cErr.message });
-        if (!collection) return res.status(404).json({ errMsg: 'Collection not found' });
-
-        const items = collection.collection_items || [];
-        if (items.length === 0) return res.json({ updated: 0, items: [] });
-
-        const type = collection.type;
-        const freshById = new Map();
-
-        if (type === 'board') {
-            const ids = items.map(i => i.item_id).filter(Boolean);
-            const CHUNK = 20;
-            const chunks = [];
-            for (let i = 0; i < ids.length; i += CHUNK) chunks.push(ids.slice(i, i + CHUNK));
-            await Promise.all(chunks.map(async (chunkIds) => {
-                try {
-                    const r = await fetch(`https://boardgamegeek.com/xmlapi2/thing?id=${chunkIds.join(',')}`, {
-                        headers: { Authorization: `Bearer ${process.env.BOARD_GAME_GEEK_API_TOKEN}` },
-                    });
-                    const xml = await r.text();
-                    const parsed = JSON.parse(convert.xml2json(xml, { compact: true, spaces: 4 }));
-                    const raw = parsed.items && parsed.items.item ? parsed.items.item : [];
-                    const things = Array.isArray(raw) ? raw : [raw];
-                    for (const t of things) {
-                        const id = t._attributes && t._attributes.id;
-                        const image = t.image && t.image._text;
-                        if (id && image) freshById.set(String(id), image);
-                    }
-                } catch (err) {
-                    console.log('refresh BGG chunk failed:', err.message);
-                }
-            }));
-        } else if (type === 'movie' || type === 'tv') {
-            await Promise.all(items.map(async (it) => {
-                try {
-                    // Pass language=en-US so we get the same regional
-                    // poster that /discover and /getInfo return — TMDB
-                    // serves different poster_paths per locale, and
-                    // omitting it returns a different (often original)
-                    // poster that won't match the Discover view.
-                    const r = await fetch(`https://api.themoviedb.org/3/${type}/${it.item_id}?api_key=${process.env.MOVIE_DB_API_KEY}&language=en-US`);
-                    if (!r.ok) return;
-                    const data = await r.json();
-                    // Match the size used by /discover (w342) so the
-                    // resize prefix alone doesn't change the URL when
-                    // the poster_path itself is unchanged.
-                    if (data.poster_path) freshById.set(String(it.item_id), `https://image.tmdb.org/t/p/w342${data.poster_path}`);
-                } catch (err) {
-                    console.log('refresh TMDB failed:', err.message);
-                }
-            }));
-        } else if (type === 'game') {
-            // Reuse the cached SteamGridDB poster table; fall back to RAWG's
-            // background_image for entries without a SGDB hit.
-            const ids = items.map(i => parseInt(i.item_id, 10)).filter(Number.isFinite);
-            const { data: cached } = await supabase
-                .from('game_image_cache')
-                .select('rawg_id, poster_url')
-                .in('rawg_id', ids);
-            const cachedMap = new Map((cached || []).map(c => [String(c.rawg_id), c.poster_url]));
-            await Promise.all(items.map(async (it) => {
-                const fromCache = cachedMap.get(String(it.item_id));
-                if (fromCache) {
-                    freshById.set(String(it.item_id), fromCache);
-                    return;
-                }
-                try {
-                    const r = await fetch(`https://api.rawg.io/api/games/${it.item_id}?key=${process.env.RAWG_API_KEY}`);
-                    if (!r.ok) return;
-                    const data = await r.json();
-                    if (data.background_image) freshById.set(String(it.item_id), data.background_image);
-                } catch (err) {
-                    console.log('refresh RAWG failed:', err.message);
-                }
-            }));
-        }
-
-        // Apply updates only where the poster URL actually differs from
-        // the stored one — that way the "N updated" count we report back
-        // reflects real changes the user can see, not no-op writes.
-        const updates = [];
-        for (const it of items) {
-            const fresh = freshById.get(String(it.item_id));
-            if (fresh && fresh !== it.poster) updates.push({ id: it.id, poster: fresh });
-        }
-
-        let updated = 0;
-        await Promise.all(updates.map(async (u) => {
-            const { error: uErr } = await supabase
-                .from('collection_items')
-                .update({ poster: u.poster })
-                .eq('id', u.id);
-            if (!uErr) updated++;
-        }));
-
-        // Return the refreshed item rows so the frontend can swap them in
-        // without a second round-trip.
-        const { data: refreshed, error: rErr } = await supabase
+    // Update an item's stored poster URL. Used by ItemDetails when it
+    // notices the latest poster from the source API differs from the
+    // poster we stored at add-time (lazy, on-demand refresh per item).
+    .post('/items/:collectionId/:itemId/poster', async (req, res) => {
+        const { itemId } = req.params;
+        const poster = typeof req.body?.poster === 'string' ? req.body.poster : null;
+        if (!poster) return res.status(400).json({ errMsg: 'poster is required' });
+        const { error } = await supabase
             .from('collection_items')
-            .select('*')
-            .eq('collection_id', collectionId);
-        if (rErr) return res.status(500).json({ errMsg: rErr.message });
-
-        res.json({
-            updated,
-            items: (refreshed || []).map(itemToLegacy),
-        });
+            .update({ poster })
+            .eq('id', itemId);
+        if (error) return res.status(500).json({ errMsg: error.message });
+        res.json({ poster });
     })
     // Toggle an item's "complete" flag (legacy: watched).
     .post('/items/:collectionId/:itemId', async (req, res) => {

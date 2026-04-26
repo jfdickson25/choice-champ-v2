@@ -30,6 +30,14 @@
     max-width: 240px;
     border-radius: 14px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    animation: item-details-poster-in 220ms ease-out;
+}
+
+/* Smooth fade-in when src changes (key bumps remount the img). Used so a
+   stale-to-fresh poster swap doesn't pop visually. */
+@keyframes item-details-poster-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 .item-details-title {
