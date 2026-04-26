@@ -152,7 +152,7 @@ router
 
         const { data: collection, error: cErr } = await supabase
             .from('collections')
-            .select('id, type, collection_items(id, item_id)')
+            .select('id, type, collection_items(id, item_id, poster)')
             .eq('id', collectionId)
             .maybeSingle();
         if (cErr) return res.status(500).json({ errMsg: cErr.message });
@@ -193,7 +193,12 @@ router
                     const r = await fetch(`https://api.themoviedb.org/3/${type}/${it.item_id}?api_key=${process.env.MOVIE_DB_API_KEY}`);
                     if (!r.ok) return;
                     const data = await r.json();
-                    if (data.poster_path) freshById.set(String(it.item_id), `https://image.tmdb.org/t/p/w500${data.poster_path}`);
+                    // Match the size used by /discover so a refresh only
+                    // produces a different URL when the poster_path itself
+                    // actually changed — switching only the resize prefix
+                    // would otherwise inflate the "updated" count without
+                    // ever showing a different image.
+                    if (data.poster_path) freshById.set(String(it.item_id), `https://image.tmdb.org/t/p/w342${data.poster_path}`);
                 } catch (err) {
                     console.log('refresh TMDB failed:', err.message);
                 }
@@ -224,11 +229,13 @@ router
             }));
         }
 
-        // Apply updates only where the poster actually changed.
+        // Apply updates only where the poster URL actually differs from
+        // the stored one — that way the "N updated" count we report back
+        // reflects real changes the user can see, not no-op writes.
         const updates = [];
         for (const it of items) {
             const fresh = freshById.get(String(it.item_id));
-            if (fresh) updates.push({ id: it.id, poster: fresh });
+            if (fresh && fresh !== it.poster) updates.push({ id: it.id, poster: fresh });
         }
 
         let updated = 0;
