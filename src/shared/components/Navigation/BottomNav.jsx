@@ -8,12 +8,16 @@ import './BottomNav.css';
 const ICON_SIZE = 32;
 const ICON_STROKE = 1.75;
 
+// nudgeY shifts certain icons down a few pixels to visually align their
+// optical centers with the others. RetroTv's body sits high (antennae fill
+// the upper space) and Gamepad2's grip is bottom-heavy — both feel "too
+// high" when sized identically with Clapperboard / PartyPopper / Dices.
 const tabs = [
     { to: '/collections/movie', Icon: Clapperboard, color: '#FCB016', key: 'movie' },
-    { to: '/collections/tv',    Icon: RetroTv,      color: '#F04C53', key: 'tv' },
+    { to: '/collections/tv',    Icon: RetroTv,      color: '#F04C53', key: 'tv',    nudgeY: 3 },
     { to: '/party',             Icon: PartyPopper,  color: '#A855F7', key: 'party' },
     { to: '/collections/board', Icon: Dices,        color: '#45B859', key: 'board' },
-    { to: '/collections/game',  Icon: Gamepad2,     color: '#2482C5', key: 'game' },
+    { to: '/collections/game',  Icon: Gamepad2,     color: '#2482C5', key: 'game',  nudgeY: 3 },
 ];
 
 const BottomNav = () => {
@@ -44,7 +48,10 @@ const BottomNav = () => {
                 const isActive = committedPath === tab.to || committedPath.startsWith(tab.to + '/');
                 const isLoading = clickedPath === tab.to;
                 const isHighlighted = isActive || isLoading;
-                const iconStyle = isLoading && !isActive ? { opacity: 0.6 } : undefined;
+                const iconStyle = {
+                    ...(tab.nudgeY ? { transform: `translateY(${tab.nudgeY}px)` } : {}),
+                    ...(isLoading && !isActive ? { opacity: 0.6 } : {}),
+                };
                 return (
                     <a
                         key={tab.key}
