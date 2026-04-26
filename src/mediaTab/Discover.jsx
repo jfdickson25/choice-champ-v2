@@ -176,16 +176,26 @@ const DiscoverFeed = ({ collectionType, color, onSearchingChange }) => {
                             onChange={(e) => setQuery(e.target.value)}
                             autoComplete='off'
                         />
-                        <button
-                            type='button'
-                            className='discover-search-clear'
-                            onClick={exitSearch}
-                            aria-label='Close search'
-                            style={{ color }}
-                        >
-                            <X size={16} strokeWidth={2.5} />
-                        </button>
+                        {query && (
+                            <button
+                                type='button'
+                                className='discover-search-clear'
+                                onClick={() => setQuery('')}
+                                aria-label='Clear text'
+                                style={{ color }}
+                            >
+                                <X size={14} strokeWidth={2.5} />
+                            </button>
+                        )}
                     </div>
+                    <button
+                        type='button'
+                        className='discover-search-cancel'
+                        onClick={exitSearch}
+                        style={{ color }}
+                    >
+                        Cancel
+                    </button>
                 </div>
             )}
 

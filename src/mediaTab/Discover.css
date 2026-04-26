@@ -62,12 +62,24 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 26px;
-    height: 26px;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
     background-color: rgba(0, 0, 0, 0.55);
     border: none;
     cursor: pointer;
+}
+
+.discover-search-cancel {
+    flex-shrink: 0;
+    background: transparent;
+    border: none;
+    padding: 0 4px;
+    font-family: inherit;
+    font-size: 11pt;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
 }
 
 /* Poster grid — column count is set inline via viewValue */

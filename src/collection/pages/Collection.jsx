@@ -400,16 +400,26 @@ const Collection = ({ socket }) => {
                                 onChange={e => setQuery(e.target.value)}
                                 autoComplete='off'
                             />
-                            <button
-                                type='button'
-                                className='collection-search-clear'
-                                onClick={exitSearch}
-                                aria-label='Close search'
-                                style={{ color: collectionTypeColor }}
-                            >
-                                <X size={16} strokeWidth={2.5} />
-                            </button>
+                            {query !== '' && (
+                                <button
+                                    type='button'
+                                    className='collection-search-clear'
+                                    onClick={() => setQuery('')}
+                                    aria-label='Clear text'
+                                    style={{ color: collectionTypeColor }}
+                                >
+                                    <X size={14} strokeWidth={2.5} />
+                                </button>
+                            )}
                         </div>
+                        <button
+                            type='button'
+                            className='collection-search-cancel'
+                            onClick={exitSearch}
+                            style={{ color: collectionTypeColor }}
+                        >
+                            Cancel
+                        </button>
                     </div>
                 ) : (
                 <div className='collection-sticky-header'>
