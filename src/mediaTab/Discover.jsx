@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Search as SearchIcon, SlidersHorizontal, X } from 'lucide-react';
+import { ArrowLeft, Columns2, Columns3, Columns4, Search as SearchIcon, SlidersHorizontal, X } from 'lucide-react';
 
 import { SUBTABS, fetchDiscover, fetchSearch, fetchGamePosters } from './discoverApi';
 import SortFilterPanel from '../shared/components/SortFilterPanel/SortFilterPanel';
@@ -30,6 +30,8 @@ const DiscoverFeed = ({ collectionType, color, onSearchingChange }) => {
     const urlQuery = searchParams.get('q') || '';
     const initialSubtab = subtabs.some(t => t.key === urlTab) ? urlTab : subtabs[0].key;
 
+    const viewKey = `choice-champ:discover-view:${collectionType}`;
+
     const [activeSubtab, setActiveSubtab] = useState(initialSubtab);
     const [query, setQuery] = useState(urlQuery);
     const [debouncedQuery, setDebouncedQuery] = useState(urlQuery);
@@ -38,7 +40,23 @@ const DiscoverFeed = ({ collectionType, color, onSearchingChange }) => {
     const [error, setError] = useState(null);
     const [filterAnchor, setFilterAnchor] = useState(null);
     const [searchModeActive, setSearchModeActive] = useState(urlQuery.length > 0);
+    const [viewValue, setViewValue] = useState(() => {
+        const saved = localStorage.getItem(viewKey);
+        const parsed = saved ? parseInt(saved, 10) : 2;
+        return [2, 3, 4].includes(parsed) ? parsed : 2;
+    });
     const inputRef = useRef(null);
+
+    const viewOptions = [
+        { value: 2, label: '2 columns', icon: Columns2 },
+        { value: 3, label: '3 columns', icon: Columns3 },
+        { value: 4, label: '4 columns', icon: Columns4 },
+    ];
+
+    const handleViewChange = (v) => {
+        setViewValue(v);
+        localStorage.setItem(viewKey, String(v));
+    };
 
     const trimmedQuery = debouncedQuery.trim();
     const isSearching = trimmedQuery.length > 0;
@@ -168,7 +186,7 @@ const DiscoverFeed = ({ collectionType, color, onSearchingChange }) => {
                 </div>
             )}
 
-            {!searchModeActive && hasMultipleSubtabs && (
+            {!searchModeActive && (
                 <button
                     type='button'
                     className='floating-filter'
@@ -196,10 +214,13 @@ const DiscoverFeed = ({ collectionType, color, onSearchingChange }) => {
                 anchorEl={filterAnchor}
                 open={Boolean(filterAnchor)}
                 onClose={() => setFilterAnchor(null)}
-                filterOptions={subtabs.map(t => ({ value: t.key, label: t.label }))}
+                filterOptions={hasMultipleSubtabs ? subtabs.map(t => ({ value: t.key, label: t.label })) : []}
                 filterValue={activeSubtab}
                 onFilterChange={(v) => { setActiveSubtab(v); setFilterAnchor(null); }}
                 filterLabel='Category'
+                viewOptions={viewOptions}
+                viewValue={viewValue}
+                onViewChange={handleViewChange}
                 activeColor={color}
             />
 
@@ -211,7 +232,10 @@ const DiscoverFeed = ({ collectionType, color, onSearchingChange }) => {
                 </p>
             )}
             {!isLoading && !error && items.length > 0 && (
-                <div className='discover-grid'>
+                <div
+                    className='discover-grid'
+                    style={{ gridTemplateColumns: `repeat(${viewValue}, minmax(0, 1fr))` }}
+                >
                     {items.map(item => (
                         <button
                             key={item.id}
