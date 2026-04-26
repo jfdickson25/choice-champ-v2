@@ -4,15 +4,12 @@ import { ArrowLeft } from 'lucide-react';
 
 import { AuthContext } from '../../shared/context/auth-context';
 
-import './Attribution.css';
+import TMDB_LOGO from '../assets/img/tmdb-logo.png';
+import RAWG_LOGO from '../assets/img/rawg-logo.png';
+import SGDB_LOGO from '../assets/img/sgdb-logo.png';
+import BGG_LOGO from '../assets/img/bgg-logo.png';
 
-// External logo URLs. Each points to the source's own apple-touch-icon
-// (a 180x180 PNG that any modern site keeps at this stable path) so we
-// don't depend on third-party hosts like Reddit/Squarespace caches.
-const TMDB_LOGO = 'https://www.themoviedb.org/apple-touch-icon.png';
-const RAWG_LOGO = 'https://rawg.io/apple-touch-icon.png';
-const SGDB_LOGO = 'https://www.steamgriddb.com/apple-touch-icon.png';
-const BGG_LOGO = 'https://boardgamegeek.com/apple-touch-icon.png';
+import './Attribution.css';
 
 const Attribution = () => {
     const auth = useContext(AuthContext);
