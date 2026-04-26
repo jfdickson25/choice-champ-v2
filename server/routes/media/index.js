@@ -386,13 +386,22 @@ router
                 const rawItems = parsed.items && parsed.items.item ? parsed.items.item : [];
                 const itemArray = Array.isArray(rawItems) ? rawItems : [rawItems];
 
-                const results = itemArray.map(item => ({
-                    id: item._attributes && item._attributes.id,
-                    title: item.name && item.name._attributes && item.name._attributes.value,
-                    poster: item.thumbnail && item.thumbnail._attributes && item.thumbnail._attributes.value || null,
-                    rating: null,
-                    releaseDate: item.yearpublished && item.yearpublished._attributes && item.yearpublished._attributes.value || null
-                }));
+                const results = itemArray.map(item => {
+                    const thumbUrl = item.thumbnail && item.thumbnail._attributes && item.thumbnail._attributes.value || null;
+                    // BGG's hot endpoint only includes the thumbnail (~75px)
+                    // which looks blurry in our poster grid. The CDN URL
+                    // pattern lets us swap "__thumb" for "__imagepage" to
+                    // get a much larger variant of the same image without
+                    // an extra API round-trip per item.
+                    const poster = thumbUrl ? thumbUrl.replace('__thumb', '__imagepage') : null;
+                    return {
+                        id: item._attributes && item._attributes.id,
+                        title: item.name && item.name._attributes && item.name._attributes.value,
+                        poster,
+                        rating: null,
+                        releaseDate: item.yearpublished && item.yearpublished._attributes && item.yearpublished._attributes.value || null
+                    };
+                });
 
                 return res.send({
                     results,
