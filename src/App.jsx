@@ -14,19 +14,45 @@ import ErrorBoundary from './shared/components/ErrorBoundary';
 import { AuthContext } from './shared/context/auth-context';
 import { supabase } from './shared/lib/supabase';
 
-const Collection = lazy(() => import('./collection/pages/Collection'));
-const ItemDetails = lazy(() => import('./collection/pages/ItemDetails'));
-const Auth = lazy(() => import('./user/pages/Auth'));
-const PasswordReset = lazy(() => import('./user/pages/PasswordReset'));
-const Welcome = lazy(() => import('./welcome/pages/Welcome'));
-const PartyHome = lazy(() => import('./party/pages/PartyHome'));
-const PartyWait = lazy(() => import('./party/pages/PartyWait'));
-const Party = lazy(() => import('./party/pages/Party'));
-const JoinParty = lazy(() => import('./party/pages/JoinParty'));
-const Profile = lazy(() => import('./profile/pages/Profile'));
-const Attribution = lazy(() => import('./profile/pages/Attribution'));
-const Contact = lazy(() => import('./profile/pages/Contact'));
-const MediaTab = lazy(() => import('./mediaTab/MediaTab'));
+// After a deploy, the user's still-open tab references the previous
+// content-hashed chunk filenames. When they navigate to a not-yet-
+// loaded lazy route, the browser tries to fetch the old chunk URL.
+// Vercel's SPA fallback returns index.html, which the browser refuses
+// to execute as a module ('text/html' is not a valid JavaScript MIME
+// type). Catch that failure and hard-reload so the new index.html is
+// picked up. The sessionStorage guard prevents an infinite reload loop
+// if the failure is for some other reason; it's cleared on next
+// successful mount so the next deploy can trigger a reload again.
+const RELOAD_GUARD_KEY = 'cc:chunk-reload-attempted';
+
+const lazyWithReload = (loader) =>
+  lazy(async () => {
+    try {
+      return await loader();
+    } catch (err) {
+      if (!sessionStorage.getItem(RELOAD_GUARD_KEY)) {
+        sessionStorage.setItem(RELOAD_GUARD_KEY, '1');
+        window.location.reload();
+        // Keep Suspense pending while the page reloads.
+        return new Promise(() => {});
+      }
+      throw err;
+    }
+  });
+
+const Collection = lazyWithReload(() => import('./collection/pages/Collection'));
+const ItemDetails = lazyWithReload(() => import('./collection/pages/ItemDetails'));
+const Auth = lazyWithReload(() => import('./user/pages/Auth'));
+const PasswordReset = lazyWithReload(() => import('./user/pages/PasswordReset'));
+const Welcome = lazyWithReload(() => import('./welcome/pages/Welcome'));
+const PartyHome = lazyWithReload(() => import('./party/pages/PartyHome'));
+const PartyWait = lazyWithReload(() => import('./party/pages/PartyWait'));
+const Party = lazyWithReload(() => import('./party/pages/Party'));
+const JoinParty = lazyWithReload(() => import('./party/pages/JoinParty'));
+const Profile = lazyWithReload(() => import('./profile/pages/Profile'));
+const Attribution = lazyWithReload(() => import('./profile/pages/Attribution'));
+const Contact = lazyWithReload(() => import('./profile/pages/Contact'));
+const MediaTab = lazyWithReload(() => import('./mediaTab/MediaTab'));
 
 const MediaTabByType = () => {
   const { type } = useParams();
@@ -59,6 +85,13 @@ function App() {
       .eq('id', session.user.id)
       .maybeSingle();
     setUsername(profile?.username ?? session.user.email);
+  }, []);
+
+  useEffect(() => {
+    // The app mounted successfully, so any prior chunk-load failure has
+    // been resolved. Clear the guard so the next stale-deploy crash can
+    // trigger another reload.
+    sessionStorage.removeItem(RELOAD_GUARD_KEY);
   }, []);
 
   useEffect(() => {
