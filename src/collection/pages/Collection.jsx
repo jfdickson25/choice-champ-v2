@@ -347,16 +347,9 @@ const Collection = ({ socket }) => {
         return items.filter(i => i.title.toLowerCase().includes(query.toLowerCase()));
     }, [items, query]);
 
-    const addedAt = (item) => {
-        // MongoDB ObjectId: first 8 hex chars encode creation time in seconds.
-        // Fall back to item.timestamp (set on watch) for any non-ObjectId shape.
-        const id = item && item._id;
-        if (typeof id === 'string' && id.length >= 8) {
-            const secs = parseInt(id.substring(0, 8), 16);
-            if (!Number.isNaN(secs)) return secs;
-        }
-        return item.timestamp || 0;
-    };
+    // collection_items now use UUIDs (post-Mongo), so we trust the
+    // server-provided `timestamp` (Unix seconds, derived from added_at).
+    const addedAt = (item) => item?.timestamp || 0;
 
     const sortedItems = useMemo(() => {
         let result = items.filter(i => i.title.toLowerCase().includes(query.toLowerCase()));
