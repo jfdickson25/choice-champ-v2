@@ -18,6 +18,17 @@ const TYPE_COLORS = {
     board: '#45B859',
 };
 
+// Format a movie runtime in minutes as "Xh Ym" / "Xh" / "Ym".
+// 135 → "2h 15m", 60 → "1h", 45 → "45m".
+const formatRuntime = (minutes) => {
+    if (!minutes || minutes <= 0) return 'N/A';
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    if (h === 0) return `${m}m`;
+    if (m === 0) return `${h}h`;
+    return `${h}h ${m}m`;
+};
+
 const ItemDetails = () => {
     const auth = useContext(AuthContext);
     const navigate = useNavigate();
@@ -212,7 +223,7 @@ const ItemDetails = () => {
 
     const infoRows = [];
     if(collectionType === 'movie') {
-        infoRows.push({ label: 'Runtime', value: details.runtime > 0 ? `${details.runtime} minute${details.runtime === 1 ? '' : 's'}` : 'N/A' });
+        infoRows.push({ label: 'Runtime', value: formatRuntime(details.runtime) });
         infoRows.push({ label: 'Rating', value: details.rating != null ? `${details.rating} / 10` : 'N/A' });
     } else if(collectionType === 'tv') {
         infoRows.push({ label: 'Seasons', value: details.runtime > 0 ? `${details.runtime} season${details.runtime === 1 ? '' : 's'}` : 'N/A' });
