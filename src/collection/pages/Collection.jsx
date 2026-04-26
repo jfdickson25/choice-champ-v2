@@ -386,14 +386,6 @@ const Collection = ({ socket }) => {
                         className='collection-search-sticky-header'
                         style={{ borderBottomColor: collectionTypeColor }}
                     >
-                        <button
-                            type='button'
-                            className='icon-btn'
-                            onClick={exitSearch}
-                            aria-label='Close search'
-                        >
-                            <X size={22} strokeWidth={2.5} />
-                        </button>
                         <div
                             className='collection-search-input-wrap'
                             style={{ borderColor: collectionTypeColor }}
@@ -408,17 +400,15 @@ const Collection = ({ socket }) => {
                                 onChange={e => setQuery(e.target.value)}
                                 autoComplete='off'
                             />
-                            {query !== '' && (
-                                <button
-                                    type='button'
-                                    className='collection-search-clear'
-                                    onClick={() => setQuery('')}
-                                    aria-label='Clear text'
-                                    style={{ color: collectionTypeColor }}
-                                >
-                                    <X size={16} strokeWidth={2.5} />
-                                </button>
-                            )}
+                            <button
+                                type='button'
+                                className='collection-search-clear'
+                                onClick={exitSearch}
+                                aria-label='Close search'
+                                style={{ color: collectionTypeColor }}
+                            >
+                                <X size={16} strokeWidth={2.5} />
+                            </button>
                         </div>
                     </div>
                 ) : (

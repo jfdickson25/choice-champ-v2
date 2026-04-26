@@ -155,14 +155,6 @@ const DiscoverFeed = ({ collectionType, color, onSearchingChange }) => {
                     className='discover-search-sticky-header'
                     style={{ borderBottomColor: color }}
                 >
-                    <button
-                        type='button'
-                        className='icon-btn'
-                        onClick={exitSearch}
-                        aria-label='Close search'
-                    >
-                        <X size={22} strokeWidth={2.5} />
-                    </button>
                     <div className='discover-search-input-wrap' style={{ borderColor: color }}>
                         <SearchIcon size={18} strokeWidth={2} style={{ color }} aria-hidden='true' />
                         <input
@@ -174,17 +166,15 @@ const DiscoverFeed = ({ collectionType, color, onSearchingChange }) => {
                             onChange={(e) => setQuery(e.target.value)}
                             autoComplete='off'
                         />
-                        {query && (
-                            <button
-                                type='button'
-                                className='discover-search-clear'
-                                onClick={() => setQuery('')}
-                                aria-label='Clear text'
-                                style={{ color }}
-                            >
-                                <X size={16} strokeWidth={2.5} />
-                            </button>
-                        )}
+                        <button
+                            type='button'
+                            className='discover-search-clear'
+                            onClick={exitSearch}
+                            aria-label='Close search'
+                            style={{ color }}
+                        >
+                            <X size={16} strokeWidth={2.5} />
+                        </button>
                     </div>
                 </div>
             )}
