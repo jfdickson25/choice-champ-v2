@@ -43,7 +43,6 @@ const DiscoverFeed = ({ collectionType, color, onSearchingChange }) => {
     const trimmedQuery = debouncedQuery.trim();
     const isSearching = trimmedQuery.length > 0;
     const hasMultipleSubtabs = subtabs.length > 1;
-    const isFilteringNonDefault = activeSubtab !== subtabs[0].key;
 
     useEffect(() => {
         const id = setTimeout(() => setDebouncedQuery(query), 300);
@@ -178,9 +177,6 @@ const DiscoverFeed = ({ collectionType, color, onSearchingChange }) => {
                     style={{ color }}
                 >
                     <SlidersHorizontal size={20} strokeWidth={2.5} />
-                    {isFilteringNonDefault && (
-                        <span className='floating-filter-badge' style={{ backgroundColor: color }} />
-                    )}
                 </button>
             )}
 
