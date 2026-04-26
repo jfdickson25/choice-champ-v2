@@ -189,7 +189,6 @@ const DiscoverFeed = ({ collectionType, color, onSearchingChange }) => {
                     className='floating-search-btn'
                     onClick={enterSearch}
                     aria-label='Search'
-                    style={{ color }}
                 >
                     <SearchIcon size={20} strokeWidth={2.5} />
                 </button>

@@ -260,8 +260,8 @@ button {
 
 .floating-filter {
   position: fixed;
-  right: 16px;
-  bottom: calc(env(safe-area-inset-bottom, 0) + 152px);
+  right: 72px;
+  bottom: calc(env(safe-area-inset-bottom, 0) + 96px);
   z-index: 21;
   width: 44px;
   height: 44px;
