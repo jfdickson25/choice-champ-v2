@@ -179,7 +179,7 @@ router
 
         const { data: memberships, error: mErr } = await supabase
             .from('collection_members')
-            .select('collections!inner(id, name, type, collection_items(id, item_id))')
+            .select('collections!inner(id, name, type, collection_items(id, item_id, complete))')
             .eq('user_id', userId)
             .eq('collections.type', mediaType);
         if (mErr) return res.status(500).json({ errMsg: mErr.message });
@@ -192,6 +192,7 @@ router
                 collectionId: c.id,
                 exists: Boolean(hit),
                 itemId: hit ? hit.id : undefined,
+                complete: hit ? Boolean(hit.complete) : false,
             };
         });
 

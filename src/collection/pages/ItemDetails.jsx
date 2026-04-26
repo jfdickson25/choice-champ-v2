@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Check, Circle } from 'lucide-react';
+import { ArrowLeft, Check, Plus } from 'lucide-react';
 import Showdown from 'showdown';
 
 import Loading from '../../shared/components/Loading';
@@ -22,9 +22,6 @@ const ItemDetails = () => {
     const navigate = useNavigate();
     const { type: collectionType, itemId } = useParams();
     const [searchParams] = useSearchParams();
-    const collectionId = searchParams.get('cid');
-    const mongoItemId = searchParams.get('mid');
-    const initialWatched = searchParams.get('w') === '1';
     // Poster URL passed from the source view (Discover or Collection grid)
     // so the detail view displays exactly what the user just tapped on,
     // sidestepping any TMDB poster-path drift between endpoints.
@@ -35,12 +32,22 @@ const ItemDetails = () => {
     const watchedLabel = isPlayed ? 'Played' : 'Watched';
     const unwatchedLabel = isPlayed ? 'Unplayed' : 'Unwatched';
 
-    const [watched, setWatched] = useState(initialWatched);
+    const [globallyWatched, setGloballyWatched] = useState(false);
     const [details, setDetails] = useState({});
     const [providers, setProviders] = useState({});
     const [collectionList, setCollectionList] = useState([]);
     const [loadingDetails, setLoadingDetails] = useState(false);
     const [loadingCollections, setLoadingCollections] = useState(false);
+
+    // Fetch the user's global watched/played status for this item.
+    useEffect(() => {
+        if (!itemId) return;
+        let cancelled = false;
+        api(`/user/watched/${collectionType}/${itemId}`)
+            .then(data => { if (!cancelled) setGloballyWatched(Boolean(data?.completed)); })
+            .catch(err => console.log(err));
+        return () => { cancelled = true; };
+    }, [collectionType, itemId]);
 
     useEffect(() => {
         auth.showFooterHandler(false);
@@ -110,7 +117,10 @@ const ItemDetails = () => {
             const newItem = data.newItems[0];
             setCollectionList(prev => {
                 const next = [...prev];
-                if(next[index]) next[index].itemId = newItem._id;
+                if(next[index]) {
+                    next[index].itemId = newItem._id;
+                    next[index].complete = false;
+                }
                 return next;
             });
             broadcast(`collection:${addCollectionId}`, 'add', { item: newItem });
@@ -127,28 +137,55 @@ const ItemDetails = () => {
     const toggleCollection = (collection, index) => {
         const next = [...collectionList];
         if(collection.exists) {
-            next[index].exists = false;
-            removeFromCollection(next[index].collectionId, next[index].itemId);
+            next[index] = { ...next[index], exists: false, complete: false };
+            removeFromCollection(collection.collectionId, collection.itemId);
         } else {
-            next[index].exists = true;
-            addToCollection(next[index].collectionId, index);
+            next[index] = { ...next[index], exists: true };
+            addToCollection(collection.collectionId, index);
         }
         setCollectionList(next);
     };
 
-    const toggleWatched = () => {
-        if(!collectionId || !mongoItemId) return;
-        const nextWatched = !watched;
-        setWatched(nextWatched);
-        api(`/collections/items/${collectionId}/${mongoItemId}`, {
+    // Per-collection completion toggle on the My Collections row.
+    // Updates collection_items.complete (group-shared) and broadcasts so
+    // other members watching the collection see the change live.
+    const toggleCollectionComplete = (collection, index) => {
+        if (!collection.exists || !collection.itemId) return;
+        const nextComplete = !collection.complete;
+        setCollectionList(prev => {
+            const arr = [...prev];
+            arr[index] = { ...arr[index], complete: nextComplete };
+            return arr;
+        });
+        api(`/collections/items/${collection.collectionId}/${collection.itemId}`, {
             method: 'POST',
-            body: JSON.stringify({ watched: nextWatched })
+            body: JSON.stringify({ watched: nextComplete })
         })
-        .then(() => broadcast(`collection:${collectionId}`, 'watched', { id: mongoItemId }))
-        .catch(err => console.log(err));
+        .then(() => broadcast(`collection:${collection.collectionId}`, 'watched', { id: collection.itemId }))
+        .catch(err => {
+            console.log(err);
+            // Roll back optimistic update on failure.
+            setCollectionList(prev => {
+                const arr = [...prev];
+                if (arr[index]) arr[index] = { ...arr[index], complete: !nextComplete };
+                return arr;
+            });
+        });
     };
 
-    const hasCollectionContext = Boolean(collectionId && mongoItemId);
+    // Global watched/played toggle (per-user, across all collections).
+    const toggleGlobalWatched = () => {
+        const next = !globallyWatched;
+        setGloballyWatched(next);
+        api(`/user/watched/${collectionType}/${itemId}`, {
+            method: 'POST',
+            body: JSON.stringify({ completed: next })
+        }).catch(err => {
+            console.log(err);
+            setGloballyWatched(!next);
+        });
+    };
+
     const isLoading = loadingDetails || loadingCollections;
 
     const infoRows = [];
@@ -191,31 +228,29 @@ const ItemDetails = () => {
                     )}
                     <h1 className='item-details-title' style={{ color }}>{details.title}</h1>
 
-                    {hasCollectionContext && (
-                        <section className='item-details-section'>
-                            <div className='item-details-card'>
-                                <div className='item-details-row item-details-watched-row'>
-                                    <span className='item-details-row-label'>Status</span>
-                                    <div className='item-details-watched-control'>
-                                        <span className='item-details-watched-state'>
-                                            {watched ? watchedLabel : unwatchedLabel}
-                                        </span>
-                                        <button
-                                            type='button'
-                                            role='switch'
-                                            aria-checked={watched}
-                                            aria-label={`Toggle ${watchedLabel.toLowerCase()}`}
-                                            className={`item-details-watched-switch ${watched ? 'is-on' : ''}`}
-                                            style={watched ? { backgroundColor: color } : undefined}
-                                            onClick={toggleWatched}
-                                        >
-                                            <span className='item-details-watched-knob' />
-                                        </button>
-                                    </div>
+                    <section className='item-details-section'>
+                        <div className='item-details-card'>
+                            <div className='item-details-row item-details-watched-row'>
+                                <span className='item-details-row-label'>Status</span>
+                                <div className='item-details-watched-control'>
+                                    <span className='item-details-watched-state'>
+                                        {globallyWatched ? watchedLabel : unwatchedLabel}
+                                    </span>
+                                    <button
+                                        type='button'
+                                        role='switch'
+                                        aria-checked={globallyWatched}
+                                        aria-label={`Toggle ${watchedLabel.toLowerCase()}`}
+                                        className={`item-details-watched-switch ${globallyWatched ? 'is-on' : ''}`}
+                                        style={globallyWatched ? { backgroundColor: color } : undefined}
+                                        onClick={toggleGlobalWatched}
+                                    >
+                                        <span className='item-details-watched-knob' />
+                                    </button>
                                 </div>
                             </div>
-                        </section>
-                    )}
+                        </div>
+                    </section>
 
                     {infoRows.length > 0 && (
                         <section className='item-details-section'>
@@ -280,21 +315,38 @@ const ItemDetails = () => {
                             <h2 className='item-details-section-title'>My Collections</h2>
                             <div className='item-details-card'>
                                 {collectionList.map((collection, index) => (
-                                    <button
-                                        type='button'
-                                        key={collection.collectionId}
-                                        className='item-details-collection-row'
-                                        onClick={() => toggleCollection(collection, index)}
-                                    >
+                                    <div key={collection.collectionId} className='item-details-collection-row'>
+                                        <button
+                                            type='button'
+                                            className='item-details-collection-toggle'
+                                            onClick={() => toggleCollection(collection, index)}
+                                            aria-label={collection.exists ? `Remove from ${collection.name}` : `Add to ${collection.name}`}
+                                        >
+                                            {collection.exists ? (
+                                                <span className='item-details-collection-checked' style={{ backgroundColor: color }}>
+                                                    <Check size={14} strokeWidth={3} color='#111' />
+                                                </span>
+                                            ) : (
+                                                <span className='item-details-collection-plus'>
+                                                    <Plus size={16} strokeWidth={2.5} />
+                                                </span>
+                                            )}
+                                        </button>
                                         <span className='item-details-collection-name'>{collection.name}</span>
-                                        {collection.exists ? (
-                                            <span className='item-details-collection-checked' style={{ backgroundColor: color }}>
-                                                <Check size={14} strokeWidth={3} color='#111' />
-                                            </span>
-                                        ) : (
-                                            <Circle size={22} strokeWidth={1.5} style={{ color: 'rgba(255,255,255,0.3)' }} />
+                                        {collection.exists && (
+                                            <button
+                                                type='button'
+                                                role='switch'
+                                                aria-checked={collection.complete}
+                                                aria-label={`Toggle ${watchedLabel.toLowerCase()} for ${collection.name}`}
+                                                className={`item-details-watched-switch ${collection.complete ? 'is-on' : ''}`}
+                                                style={collection.complete ? { backgroundColor: color } : undefined}
+                                                onClick={() => toggleCollectionComplete(collection, index)}
+                                            >
+                                                <span className='item-details-watched-knob' />
+                                            </button>
                                         )}
-                                    </button>
+                                    </div>
                                 ))}
                             </div>
                         </section>

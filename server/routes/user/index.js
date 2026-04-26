@@ -71,6 +71,38 @@ router
         const { error } = await supabase.auth.admin.deleteUser(userId);
         if (error) return res.status(500).json({ errMsg: error.message });
         res.json({ ok: true });
+    })
+
+    // ------------------------------------------------------------------
+    // Per-user global watched/played status (watched_media table).
+    // Independent from collection_items.complete (which is the shared
+    // group-completion flag inside a single collection).
+    // ------------------------------------------------------------------
+    .get('/watched/:mediaType/:itemId', requireAuth, async (req, res) => {
+        const userId = req.user.id;
+        const { mediaType, itemId } = req.params;
+        const { data, error } = await supabase
+            .from('watched_media')
+            .select('completed')
+            .eq('user_id', userId)
+            .eq('media_type', mediaType)
+            .eq('item_id', String(itemId))
+            .maybeSingle();
+        if (error) return res.status(500).json({ errMsg: error.message });
+        res.json({ completed: Boolean(data?.completed) });
+    })
+    .post('/watched/:mediaType/:itemId', requireAuth, async (req, res) => {
+        const userId = req.user.id;
+        const { mediaType, itemId } = req.params;
+        const completed = Boolean(req.body?.completed);
+        const { error } = await supabase
+            .from('watched_media')
+            .upsert(
+                { user_id: userId, media_type: mediaType, item_id: String(itemId), completed, updated_at: new Date().toISOString() },
+                { onConflict: 'user_id,media_type,item_id' }
+            );
+        if (error) return res.status(500).json({ errMsg: error.message });
+        res.json({ completed });
     });
 
 module.exports = router;
