@@ -219,8 +219,26 @@
        the surrounding sections stay reachable without huge scroll. */
     max-height: 320px;
     overflow-y: auto;
+    /* Force everything to wrap inside the column — BGG content can
+       include long URLs, IDs, or wide nodes that would otherwise
+       trigger a horizontal scrollbar. */
+    overflow-x: hidden;
+    overflow-wrap: break-word;
+    word-break: break-word;
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.item-details-overview img,
+.item-details-overview table,
+.item-details-overview pre {
+    max-width: 100%;
+    height: auto;
+}
+
+.item-details-overview pre,
+.item-details-overview code {
+    white-space: pre-wrap;
 }
 
 .item-details-overview::-webkit-scrollbar {
