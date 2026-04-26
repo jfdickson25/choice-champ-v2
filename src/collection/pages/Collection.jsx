@@ -204,21 +204,20 @@ const Collection = ({ socket }) => {
                     .catch(err => console.log('poster upgrade skipped:', err.message));
             }
 
-            // Give a little time for the items to load
-            setTimeout(() => {
-                setIsLoading(false);
-
-                // If there is a hash in the url, scroll to that element.
-                // Wait one more tick for the grid to render the new item
-                // nodes, then look up by id. Null-check in case the hashed
-                // item isn't in the collection (e.g., it was just removed).
-                if(hash) {
-                    setTimeout(() => {
+            // Render the grid in the DOM (still hidden behind the loader
+            // while isLoading is true). Wait two frames for layout, then
+            // jump-scroll to the hash item under the still-visible loader,
+            // then drop the loader so the grid reveals already in place
+            // — no visible scroll-from-top animation.
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    if (hash) {
                         const element = document.getElementById(hash);
-                        if (element) element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }, 500);
-                }
-            }, 500);
+                        if (element) element.scrollIntoView({ behavior: 'auto', block: 'center' });
+                    }
+                    setIsLoading(false);
+                });
+            });
 
         });
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -474,11 +473,13 @@ const Collection = ({ socket }) => {
                 </div>
                 )}
 
-                {isLoading ? (
+                {isLoading && (
                     <div className='collection-loading'>
                         <Loading color={collectionTypeColor} type='beat' size={20} />
                     </div>
-                ) : isEdit ? (
+                )}
+
+                {!isLoading && isEdit && (
                     manageItems.length === 0 ? (
                         <div className='collection-empty'>
                             {query !== '' ? 'No items match search' : 'No items in this collection'}
@@ -494,12 +495,24 @@ const Collection = ({ socket }) => {
                             </SortableContext>
                         </DndContext>
                     )
-                ) : sortedItems.length === 0 ? (
+                )}
+
+                {!isLoading && !isEdit && sortedItems.length === 0 && (
                     <div className='collection-empty'>{emptyMessage}</div>
-                ) : (
+                )}
+
+                {/* Always render the grid when items are available, even
+                    while isLoading is true — visibility:hidden keeps it in
+                    layout (so scroll positions are computable) without
+                    showing it under the loader. The loading effect flips
+                    it visible right after the scroll-into-view jump. */}
+                {!isEdit && sortedItems.length > 0 && (
                     <div
                         className='collection-grid'
-                        style={{ gridTemplateColumns: `repeat(${viewValue}, minmax(0, 1fr))` }}
+                        style={{
+                            gridTemplateColumns: `repeat(${viewValue}, minmax(0, 1fr))`,
+                            visibility: isLoading ? 'hidden' : 'visible',
+                        }}
                     >
                         {sortedItems.map(item => (
                             <div
