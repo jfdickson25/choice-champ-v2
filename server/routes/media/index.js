@@ -344,26 +344,35 @@ router
                 // a Map of id → full-resolution <image> URL. The /hot and
                 // /search endpoints only return small thumbnails which
                 // look blurry in our poster grid; /thing has the original.
-                // Failures fall back silently — caller uses thumbnails.
+                // BGG caps /thing at 20 IDs per request, so chunk and run
+                // chunks in parallel. Failures fall back silently — caller
+                // uses thumbnails.
+                const BGG_THING_CHUNK = 20;
                 const fetchBoardImages = async (ids) => {
                     const map = new Map();
                     if (!ids.length) return map;
-                    try {
-                        const thingRes = await fetch(`https://boardgamegeek.com/xmlapi2/thing?id=${ids.join(',')}`, {
-                            headers: { Authorization: `Bearer ${process.env.BOARD_GAME_GEEK_API_TOKEN}` }
-                        });
-                        const thingXml = await thingRes.text();
-                        const thingParsed = JSON.parse(convert.xml2json(thingXml, { compact: true, spaces: 4 }));
-                        const rawThings = thingParsed.items && thingParsed.items.item ? thingParsed.items.item : [];
-                        const things = Array.isArray(rawThings) ? rawThings : [rawThings];
-                        for (const t of things) {
-                            const id = t._attributes && t._attributes.id;
-                            const image = t.image && t.image._text;
-                            if (id && image) map.set(String(id), image);
-                        }
-                    } catch (err) {
-                        console.log('BGG /thing batch failed:', err.message);
+                    const chunks = [];
+                    for (let i = 0; i < ids.length; i += BGG_THING_CHUNK) {
+                        chunks.push(ids.slice(i, i + BGG_THING_CHUNK));
                     }
+                    await Promise.all(chunks.map(async (chunkIds) => {
+                        try {
+                            const thingRes = await fetch(`https://boardgamegeek.com/xmlapi2/thing?id=${chunkIds.join(',')}`, {
+                                headers: { Authorization: `Bearer ${process.env.BOARD_GAME_GEEK_API_TOKEN}` }
+                            });
+                            const thingXml = await thingRes.text();
+                            const thingParsed = JSON.parse(convert.xml2json(thingXml, { compact: true, spaces: 4 }));
+                            const rawThings = thingParsed.items && thingParsed.items.item ? thingParsed.items.item : [];
+                            const things = Array.isArray(rawThings) ? rawThings : [rawThings];
+                            for (const t of things) {
+                                const id = t._attributes && t._attributes.id;
+                                const image = t.image && t.image._text;
+                                if (id && image) map.set(String(id), image);
+                            }
+                        } catch (err) {
+                            console.log('BGG /thing chunk failed:', err.message);
+                        }
+                    }));
                     return map;
                 };
 
