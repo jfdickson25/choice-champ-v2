@@ -98,7 +98,12 @@ function App() {
         root.classList.remove('cc-keyboard-open');
         return;
       }
-      const inset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      // Keyboard height = layout viewport height minus visual viewport
+      // height. Don't subtract vv.offsetTop — iOS reports non-zero offsets
+      // during its auto-scroll-to-input animation, which inflates the
+      // inset and shoves the bar way too high. Pure (innerHeight -
+      // vv.height) ignores any vv repositioning and is stable.
+      const inset = Math.max(0, window.innerHeight - vv.height);
       root.style.setProperty('--cc-kb-inset', `${inset}px`);
       root.classList.toggle('cc-keyboard-open', inset > 40);
     };
@@ -114,15 +119,16 @@ function App() {
 
     document.addEventListener('focusin', onFocusIn);
     document.addEventListener('focusout', onFocusOut);
+    // Listen only to resize: keyboard height changes on open/close, not
+    // on scroll. vv.scroll fires constantly during page scroll and would
+    // re-trigger our apply() with stale or transient values.
     vv.addEventListener('resize', schedule);
-    vv.addEventListener('scroll', schedule);
 
     return () => {
       if (rafId !== null) cancelAnimationFrame(rafId);
       document.removeEventListener('focusin', onFocusIn);
       document.removeEventListener('focusout', onFocusOut);
       vv.removeEventListener('resize', schedule);
-      vv.removeEventListener('scroll', schedule);
       root.style.removeProperty('--cc-kb-inset');
       root.classList.remove('cc-keyboard-open');
     };
