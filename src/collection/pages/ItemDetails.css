@@ -75,24 +75,31 @@
     letter-spacing: 0.08em;
 }
 
-.item-details-section-hint-wrap {
+/* Whole hint group is one tap target — both the WATCHED label and the
+   info icon open the help popover. */
+.item-details-section-hint-button {
     display: flex;
     align-items: center;
     gap: 6px;
-}
-
-.item-details-section-hint-info {
     background: none;
     border: none;
-    padding: 0;
-    color: rgba(255, 255, 255, 0.4);
+    padding: 4px 0;
+    margin: -4px 0;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    transition: color 150ms ease-out;
+    line-height: 1;
 }
 
-.item-details-section-hint-info:hover {
+.item-details-section-hint-icon {
+    color: rgba(255, 255, 255, 0.4);
+    transition: color 150ms ease-out;
+    /* SVGs sit on the geometric center; the WATCHED text has no
+       descenders, so a 1px lift puts the icon on the same optical
+       row as the uppercase letters. */
+    transform: translateY(-1px);
+}
+
+.item-details-section-hint-button:hover .item-details-section-hint-icon,
+.item-details-section-hint-button:hover .item-details-section-hint {
     color: rgba(255, 255, 255, 0.7);
 }
 

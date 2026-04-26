@@ -271,17 +271,15 @@ const ItemDetails = () => {
                         <section className='item-details-section'>
                             <div className='item-details-section-header'>
                                 <h2 className='item-details-section-title'>My Collections</h2>
-                                <div className='item-details-section-hint-wrap'>
+                                <button
+                                    type='button'
+                                    className='item-details-section-hint-button'
+                                    onClick={(e) => setHintAnchor(e.currentTarget)}
+                                    aria-label={`What does the ${watchedLabel.toLowerCase()} toggle do?`}
+                                >
                                     <span className='item-details-section-hint'>{watchedLabel}</span>
-                                    <button
-                                        type='button'
-                                        className='item-details-section-hint-info'
-                                        onClick={(e) => setHintAnchor(e.currentTarget)}
-                                        aria-label={`What does the ${watchedLabel.toLowerCase()} toggle do?`}
-                                    >
-                                        <Info size={14} strokeWidth={2} />
-                                    </button>
-                                </div>
+                                    <Info size={14} strokeWidth={2} className='item-details-section-hint-icon' />
+                                </button>
                             </div>
                             <Popover
                                 open={Boolean(hintAnchor)}

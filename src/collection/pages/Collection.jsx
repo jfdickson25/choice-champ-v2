@@ -5,7 +5,7 @@ import { supabase } from '../../shared/lib/supabase';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../shared/context/auth-context';
 import Loading from '../../shared/components/Loading';
-import { ArrowLeft, Check, MoreVertical, Pencil, Share2, ListOrdered, Trash, ArrowDownAZ, ArrowDownZA, ArrowDownWideNarrow, ArrowUpWideNarrow, Eye, Gamepad2, Dices, SlidersHorizontal, Layers, EyeOff, GripVertical, Search, X, Columns2, Columns3, Columns4, Clapperboard } from 'lucide-react';
+import { ArrowLeft, Check, MoreVertical, Pencil, RefreshCw, Share2, ListOrdered, Trash, ArrowDownAZ, ArrowDownZA, ArrowDownWideNarrow, ArrowUpWideNarrow, Eye, Gamepad2, Dices, SlidersHorizontal, Layers, EyeOff, GripVertical, Search, X, Columns2, Columns3, Columns4, Clapperboard } from 'lucide-react';
 import RetroTv from '../../shared/components/Icons/RetroTv';
 import { Menu, MenuItem, Dialog } from '@mui/material';
 
@@ -74,6 +74,14 @@ const Collection = ({ socket }) => {
 
     const handleShare = () => { setShareOpen(true); closeKebab(); };
     const handleManage = () => { setIsEdit(true); closeKebab(); };
+    const handleRefreshPosters = () => {
+        closeKebab();
+        api(`/collections/refresh-posters/${collectionId}`, { method: 'POST' })
+            .then(data => {
+                if (Array.isArray(data?.items)) setItems(data.items);
+            })
+            .catch(err => console.log(err));
+    };
     const handleRename = () => {
         setRenameDraft(collectionName);
         setRenameOpen(true);
@@ -559,6 +567,10 @@ const Collection = ({ socket }) => {
                 <MenuItem onClick={handleShare} className='collection-menu-item'>
                     <Share2 size={18} strokeWidth={2} style={{ marginRight: 12 }} />
                     Share code
+                </MenuItem>
+                <MenuItem onClick={handleRefreshPosters} className='collection-menu-item'>
+                    <RefreshCw size={18} strokeWidth={2} style={{ marginRight: 12 }} />
+                    Refresh posters
                 </MenuItem>
                 <MenuItem onClick={handleDelete} className='collection-menu-item collection-menu-item-danger'>
                     <Trash size={18} strokeWidth={2} style={{ marginRight: 12 }} />
