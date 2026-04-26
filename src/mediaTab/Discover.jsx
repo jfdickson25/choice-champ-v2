@@ -175,6 +175,7 @@ const DiscoverFeed = ({ collectionType, color, onSearchingChange }) => {
                     className='floating-filter'
                     onClick={(e) => setFilterAnchor(e.currentTarget)}
                     aria-label='Filter'
+                    style={{ color }}
                 >
                     <SlidersHorizontal size={20} strokeWidth={2.5} />
                     {isFilteringNonDefault && (
@@ -189,6 +190,7 @@ const DiscoverFeed = ({ collectionType, color, onSearchingChange }) => {
                     className='floating-search-btn'
                     onClick={enterSearch}
                     aria-label='Search'
+                    style={{ color }}
                 >
                     <SearchIcon size={20} strokeWidth={2.5} />
                 </button>
