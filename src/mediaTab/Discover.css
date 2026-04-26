@@ -1,7 +1,7 @@
 .discover {
     width: 100%;
     margin: 0;
-    padding: 0 0 calc(env(safe-area-inset-bottom, 0) + 88px) 0;
+    padding: 0;
     min-height: 60vh;
     box-sizing: border-box;
 }

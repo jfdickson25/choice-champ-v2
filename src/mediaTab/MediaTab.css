@@ -3,7 +3,7 @@
     width: 100%;
     max-width: 1400px;
     margin: 0 auto;
-    padding: 0 16px calc(env(safe-area-inset-bottom, 0) + 100px) 16px;
+    padding: 0 16px calc(env(safe-area-inset-bottom, 0) + 88px) 16px;
 }
 
 .media-tab-sticky-header {
