@@ -206,6 +206,26 @@
     color: rgba(255, 255, 255, 0.85);
     font-size: 11pt;
     line-height: 1.55;
+    /* Long synopses (especially BGG board games and RAWG video games)
+       can run several screens tall. Cap and scroll inside the card so
+       the surrounding sections stay reachable without huge scroll. */
+    max-height: 320px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.item-details-overview::-webkit-scrollbar {
+    width: 6px;
+}
+
+.item-details-overview::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+}
+
+.item-details-overview::-webkit-scrollbar-track {
+    background: transparent;
 }
 
 .item-details-overview p {
