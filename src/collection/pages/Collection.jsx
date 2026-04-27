@@ -286,7 +286,16 @@ const Collection = ({ socket }) => {
     }
 
     const navBack = () => {
-        navigate(`/collections/${collectionType}`);
+        // Honor the user's actual entry point — Profile, MediaTab, deep
+        // link, etc. — by walking one step back through history. Falls
+        // back to the MediaTab list when the page was opened directly
+        // (no prior history entry from this app), so the button never
+        // looks broken.
+        if (window.history.length > 1) {
+            navigate(-1);
+        } else {
+            navigate(`/collections/${collectionType}`);
+        }
     }
 
     const openDetails = (item) => {
