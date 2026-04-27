@@ -1,0 +1,101 @@
+.settings-content {
+    padding-bottom: 40px;
+}
+
+.settings-topbar {
+    display: flex;
+    align-items: center;
+    padding-top: 12px;
+    padding-bottom: 4px;
+}
+
+.settings-title {
+    margin: 12px 0 24px 0;
+    font-size: 24pt;
+    color: white;
+    text-align: center;
+}
+
+.settings-block {
+    margin-bottom: 20px;
+    padding: 16px;
+    background-color: rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    color: rgba(255, 255, 255, 0.85);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.settings-block-title {
+    margin: 0;
+    font-size: 11pt;
+    color: rgba(255, 255, 255, 0.6);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.settings-action-btn {
+    align-self: flex-end;
+    padding: 9px 18px;
+    background-color: #FCB016;
+    color: #111;
+    border: none;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 11pt;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 150ms ease-out, background-color 150ms ease-out;
+}
+
+.settings-action-btn:hover:not(:disabled) {
+    background-color: #ffc23a;
+}
+
+.settings-action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.settings-status {
+    margin: 0;
+    font-size: 9.5pt;
+    line-height: 1.4;
+}
+
+.settings-status-success {
+    color: #6cd47e;
+}
+
+.settings-status-error {
+    color: #ff7a7a;
+}
+
+.settings-status-saving,
+.settings-status-idle {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.settings-danger-block {
+    border: 1px solid rgba(255, 122, 122, 0.25);
+    background-color: rgba(255, 122, 122, 0.06);
+}
+
+.settings-danger-link {
+    align-self: flex-start;
+    background: none;
+    border: none;
+    padding: 0;
+    color: #ff7a7a;
+    font-family: inherit;
+    font-size: 11pt;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.settings-danger-link:hover {
+    color: #ff9595;
+    text-decoration: underline;
+}

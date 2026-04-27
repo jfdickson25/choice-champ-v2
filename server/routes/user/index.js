@@ -62,6 +62,28 @@ router
             progress,
         });
     })
+    // POST /user/username — change the signed-in user's display name.
+    // Surfaces a clean 409 on uniqueness violations so the Settings UI
+    // can show "username already taken" without parsing the raw error.
+    .post('/username', requireAuth, async (req, res) => {
+        const userId = req.user.id;
+        const username = (req.body?.username || '').trim();
+        if (!username) return res.status(400).json({ errMsg: 'Username is required' });
+        if (username.length > 30) return res.status(400).json({ errMsg: 'Username must be 30 characters or fewer' });
+
+        const { error } = await supabase
+            .from('profiles')
+            .update({ username })
+            .eq('id', userId);
+        if (error) {
+            if (error.code === '23505') {
+                return res.status(409).json({ errMsg: 'That username is already taken' });
+            }
+            return res.status(500).json({ errMsg: error.message });
+        }
+        res.json({ username });
+    })
+
     // DELETE /user/me — deletes the Supabase auth user; ON DELETE CASCADE on profiles
     // removes the profile row, and collection owner_id cascade removes owned rows.
     // Collections where the user is only a member (not owner) stay intact — the

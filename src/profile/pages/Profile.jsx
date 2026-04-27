@@ -12,7 +12,6 @@ import {
 import { api } from '../../shared/lib/api';
 import { AuthContext } from '../../shared/context/auth-context';
 import RetroTv from '../../shared/components/Icons/RetroTv';
-import Button from '../../shared/components/FormElements/Button';
 
 import './Profile.css';
 
@@ -53,8 +52,6 @@ const Profile = () => {
     const navigate = useNavigate();
     const [stats, setStats] = useState(null);
     const [logoutOpen, setLogoutOpen] = useState(false);
-    const [deleteOpen, setDeleteOpen] = useState(false);
-    const [deleteConfirm, setDeleteConfirm] = useState('');
 
     useEffect(() => {
         auth.showFooterHandler(true);
@@ -67,18 +64,6 @@ const Profile = () => {
             .catch(err => console.log(err));
     }, [auth.userId]);
 
-    const closeDeleteDialog = () => {
-        setDeleteOpen(false);
-        setDeleteConfirm('');
-    };
-
-    const deleteAccount = () => {
-        api('/user/me', { method: 'DELETE' })
-            .then(() => auth.logout())
-            .catch(err => console.log(err));
-    };
-
-    const canDelete = auth.username && deleteConfirm === auth.username;
     const memberSince = memberSinceFromIso(stats?.created_at);
     const memberFor = formatMemberFor(memberSince);
 
@@ -149,6 +134,14 @@ const Profile = () => {
                         <button
                             type='button'
                             className='profile-link-row'
+                            onClick={() => navigate('/profile/settings')}
+                        >
+                            <span>Settings</span>
+                            <ChevronRight size={20} strokeWidth={1.75} />
+                        </button>
+                        <button
+                            type='button'
+                            className='profile-link-row'
                             onClick={() => navigate('/profile/attribution')}
                         >
                             <span>Attributions</span>
@@ -163,16 +156,6 @@ const Profile = () => {
                             <ChevronRight size={20} strokeWidth={1.75} />
                         </button>
                     </div>
-                </section>
-
-                <section className='profile-section profile-danger-section'>
-                    <button
-                        type='button'
-                        className='profile-danger-link'
-                        onClick={() => setDeleteOpen(true)}
-                    >
-                        Delete Account
-                    </button>
                 </section>
             </div>
 
@@ -193,43 +176,6 @@ const Profile = () => {
                 </div>
             </Dialog>
 
-            <Dialog
-                open={deleteOpen}
-                onClose={closeDeleteDialog}
-                fullWidth
-                maxWidth='xs'
-                PaperProps={{ className: 'cc-dialog-paper' }}
-            >
-                <div className='cc-dialog'>
-                    <h3 className='cc-dialog-title'>Delete account?</h3>
-                    <p className='cc-dialog-subtitle'>
-                        This permanently removes your account and any collections only you own. This can't be undone.
-                    </p>
-                    <input
-                        className='cc-dialog-input'
-                        type='text'
-                        autoComplete='off'
-                        autoCapitalize='off'
-                        autoCorrect='off'
-                        spellCheck='false'
-                        value={deleteConfirm}
-                        onChange={(e) => setDeleteConfirm(e.target.value)}
-                        placeholder={auth.username || ''}
-                    />
-                    <p className='cc-dialog-hint'>Type <strong>{auth.username}</strong> to confirm.</p>
-                    <div className='cc-dialog-actions'>
-                        <button type='button' className='cc-dialog-btn cc-dialog-btn-secondary' onClick={closeDeleteDialog}>Cancel</button>
-                        <button
-                            type='button'
-                            className='cc-dialog-btn cc-dialog-btn-danger'
-                            onClick={deleteAccount}
-                            disabled={!canDelete}
-                        >
-                            Delete
-                        </button>
-                    </div>
-                </div>
-            </Dialog>
         </React.Fragment>
     );
 };

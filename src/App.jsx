@@ -51,6 +51,7 @@ const JoinParty = lazyWithReload(() => import('./party/pages/JoinParty'));
 const Profile = lazyWithReload(() => import('./profile/pages/Profile'));
 const Attribution = lazyWithReload(() => import('./profile/pages/Attribution'));
 const Contact = lazyWithReload(() => import('./profile/pages/Contact'));
+const Settings = lazyWithReload(() => import('./profile/pages/Settings'));
 const MediaTab = lazyWithReload(() => import('./mediaTab/MediaTab'));
 
 const MediaTabByType = () => {
@@ -130,9 +131,17 @@ function App() {
     setShowFooter(show);
   }, []);
 
+  // Re-pull the user's profile from Supabase. Used after Settings
+  // updates the username so the rest of the app sees the change
+  // without waiting for the next sign-in.
+  const refreshProfile = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) await applyProfile(session);
+  }, [applyProfile]);
+
   const authValue = useMemo(
-    () => ({ isLoggedIn, userId, username, logout, showFooterHandler }),
-    [isLoggedIn, userId, username, logout, showFooterHandler]
+    () => ({ isLoggedIn, userId, username, logout, showFooterHandler, refreshProfile }),
+    [isLoggedIn, userId, username, logout, showFooterHandler, refreshProfile]
   );
 
   const installApp = () => {
@@ -166,6 +175,7 @@ function App() {
           <Route path="/profile" element={<Profile />} exact />
           <Route path="/profile/attribution" element={<Attribution />} exact />
           <Route path="/profile/contact" element={<Contact />} exact />
+          <Route path="/profile/settings" element={<Settings />} exact />
           <Route path="/password-reset" element={<PasswordReset />} exact />
           <Route path="*" element={<Navigate to="/collections/movie" />} />
         </Routes>
