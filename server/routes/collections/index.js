@@ -71,6 +71,7 @@ router
     })
     // Get items in a specific collection.
     .get('/items/:id', async (req, res) => {
+        const userId = req.user.id;
         const collectionId = req.params.id;
 
         const { data: collection, error } = await supabase
@@ -81,8 +82,33 @@ router
         if (error) return res.status(500).json({ errMsg: error.message });
         if (!collection) return res.status(404).json({ errMsg: 'Collection not found' });
 
+        const itemRows = collection.collection_items || [];
+
+        // Per-user personal ratings live on watched_media keyed by
+        // (user, media_type, item_id). Pull the requesting user's
+        // ratings for just this collection's items in one query so
+        // the Collection grid can offer a "sort by rating" option.
+        let ratingByItemId = {};
+        if (itemRows.length > 0) {
+            const itemIds = [...new Set(itemRows.map(r => String(r.item_id)))];
+            const { data: ratings } = await supabase
+                .from('watched_media')
+                .select('item_id, rating')
+                .eq('user_id', userId)
+                .eq('media_type', collection.type)
+                .in('item_id', itemIds);
+            ratingByItemId = Object.fromEntries(
+                (ratings || [])
+                    .filter(r => r.rating != null)
+                    .map(r => [String(r.item_id), Number(r.rating)])
+            );
+        }
+
         res.json({
-            items: (collection.collection_items || []).map(itemToLegacy),
+            items: itemRows.map(row => ({
+                ...itemToLegacy(row),
+                userRating: ratingByItemId[String(row.item_id)] ?? null,
+            })),
             shareCode: collection.share_code,
             name: collection.name,
         });

@@ -5,7 +5,7 @@ import { supabase } from '../../shared/lib/supabase';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../shared/context/auth-context';
 import Loading from '../../shared/components/Loading';
-import { ArrowLeft, Check, MoreVertical, Pencil, Share2, ListOrdered, Trash, ArrowDownAZ, ArrowDownZA, ArrowDownWideNarrow, ArrowUpWideNarrow, Eye, Gamepad2, Dices, SlidersHorizontal, Layers, EyeOff, GripVertical, Search, Users, X, Columns2, Columns3, Columns4, Clapperboard } from 'lucide-react';
+import { ArrowLeft, Check, MoreVertical, Pencil, Share2, ListOrdered, Trash, ArrowDownAZ, ArrowDownZA, ArrowDownWideNarrow, ArrowUpWideNarrow, Eye, Gamepad2, Dices, SlidersHorizontal, Layers, EyeOff, GripVertical, Search, Users, X, Columns2, Columns3, Columns4, Clapperboard, Star } from 'lucide-react';
 import RetroTv from '../../shared/components/Icons/RetroTv';
 import { Menu, MenuItem, Dialog } from '@mui/material';
 
@@ -140,12 +140,14 @@ const Collection = ({ socket }) => {
     const isFiltering = filterValue !== 'all';
 
     const sortOptions = [
-        { value: 'custom',   label: 'Custom',           icon: GripVertical },
-        { value: 'recent',   label: 'Date Added ↓',     icon: ArrowDownWideNarrow },
-        { value: 'oldest',   label: 'Date Added ↑',     icon: ArrowUpWideNarrow },
-        { value: 'watched',  label: 'Recently Watched', icon: Eye },
-        { value: 'abc',      label: 'A–Z',              icon: ArrowDownAZ },
-        { value: 'zyx',      label: 'Z–A',              icon: ArrowDownZA },
+        { value: 'custom',       label: 'Custom',           icon: GripVertical },
+        { value: 'recent',       label: 'Date Added ↓',     icon: ArrowDownWideNarrow },
+        { value: 'oldest',       label: 'Date Added ↑',     icon: ArrowUpWideNarrow },
+        { value: 'watched',      label: 'Recently Watched', icon: Eye },
+        { value: 'rating-desc',  label: 'Rating ↓',         icon: Star },
+        { value: 'rating-asc',   label: 'Rating ↑',         icon: Star },
+        { value: 'abc',          label: 'A–Z',              icon: ArrowDownAZ },
+        { value: 'zyx',          label: 'Z–A',              icon: ArrowDownZA },
     ];
     const viewOptions = [
         { value: 2, label: '2 columns', icon: Columns2 },
@@ -286,6 +288,28 @@ const Collection = ({ socket }) => {
         return () => { supabase.removeChannel(channel); channelRef.current = null; };
     }, [collectionId]);
 
+    // Personal rating changes from ItemDetails (same tab, same user).
+    // Not broadcast through Supabase since ratings are per-user — other
+    // collection members shouldn't see them — and the only place a stale
+    // userRating matters is when this list re-sorts after the user comes
+    // back from rating something on the details page.
+    useEffect(() => {
+        const handler = (e) => {
+            const detail = e.detail || {};
+            if (detail.mediaType !== collectionType) return;
+            const targetId = String(detail.itemId);
+            const next = (detail.rating == null || Number.isFinite(Number(detail.rating)))
+                ? (detail.rating == null ? null : Number(detail.rating))
+                : null;
+            itemsRef.current = itemsRef.current.map(item => (
+                String(item.itemId) === targetId ? { ...item, userRating: next } : item
+            ));
+            setItems(itemsRef.current);
+        };
+        window.addEventListener('cc:user-rating', handler);
+        return () => window.removeEventListener('cc:user-rating', handler);
+    }, [collectionType]);
+
     const exitManage = () => setIsEdit(false);
 
     const removeItem = (id) => {
@@ -412,6 +436,21 @@ const Collection = ({ socket }) => {
                 const ca = a?.completedAt || 0;
                 const cb = b?.completedAt || 0;
                 if (ca !== cb) return cb - ca;
+                return addedAt(b) - addedAt(a);
+            });
+        } else if (sortValue === 'rating-desc' || sortValue === 'rating-asc') {
+            // Personal rating first, unrated items always at the bottom
+            // (ordered by date added) regardless of sort direction —
+            // surfacing unrated items at the top of an "ascending" list
+            // would defeat the point of asking to see your low-rated stuff.
+            const dir = sortValue === 'rating-desc' ? -1 : 1;
+            result = [...result].sort((a, b) => {
+                const ra = a?.userRating;
+                const rb = b?.userRating;
+                if (ra == null && rb == null) return addedAt(b) - addedAt(a);
+                if (ra == null) return 1;
+                if (rb == null) return -1;
+                if (ra !== rb) return (ra - rb) * dir;
                 return addedAt(b) - addedAt(a);
             });
         } else { /* recent / newest first */

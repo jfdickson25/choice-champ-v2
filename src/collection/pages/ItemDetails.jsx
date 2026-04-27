@@ -238,17 +238,28 @@ const ItemDetails = () => {
     };
 
     // Per-user personal rating (1.0–10.0). Optimistic update with
-    // rollback on failure.
+    // rollback on failure. Dispatches a same-tab window event so the
+    // Collection list (still mounted in the route stack) can update
+    // its own copy of the rating and re-sort if needed — ratings are
+    // per-user, so a Supabase broadcast would leak them.
+    const dispatchRatingChange = (value) => {
+        window.dispatchEvent(new CustomEvent('cc:user-rating', {
+            detail: { mediaType: collectionType, itemId, rating: value },
+        }));
+    };
+
     const saveRating = (value) => {
         const prev = userRating;
         setUserRating(value);
         setRatingDialogOpen(false);
+        dispatchRatingChange(value);
         api(`/user/rating/${collectionType}/${itemId}`, {
             method: 'POST',
             body: JSON.stringify({ rating: value })
         }).catch(err => {
             console.log(err);
             setUserRating(prev);
+            dispatchRatingChange(prev);
         });
     };
 
@@ -256,12 +267,14 @@ const ItemDetails = () => {
         const prev = userRating;
         setUserRating(null);
         setRatingDialogOpen(false);
+        dispatchRatingChange(null);
         api(`/user/rating/${collectionType}/${itemId}`, {
             method: 'POST',
             body: JSON.stringify({ rating: null })
         }).catch(err => {
             console.log(err);
             setUserRating(prev);
+            dispatchRatingChange(prev);
         });
     };
 
