@@ -127,11 +127,12 @@ const Collection = ({ socket }) => {
     const isFiltering = filterValue !== 'all';
 
     const sortOptions = [
-        { value: 'custom', label: 'Custom',       icon: GripVertical },
-        { value: 'recent', label: 'Date Added ↓', icon: ArrowDownWideNarrow },
-        { value: 'oldest', label: 'Date Added ↑', icon: ArrowUpWideNarrow },
-        { value: 'abc',    label: 'A–Z',          icon: ArrowDownAZ },
-        { value: 'zyx',    label: 'Z–A',          icon: ArrowDownZA },
+        { value: 'custom',   label: 'Custom',           icon: GripVertical },
+        { value: 'recent',   label: 'Date Added ↓',     icon: ArrowDownWideNarrow },
+        { value: 'oldest',   label: 'Date Added ↑',     icon: ArrowUpWideNarrow },
+        { value: 'watched',  label: 'Recently Watched', icon: Eye },
+        { value: 'abc',      label: 'A–Z',              icon: ArrowDownAZ },
+        { value: 'zyx',      label: 'Z–A',              icon: ArrowDownZA },
     ];
     const viewOptions = [
         { value: 2, label: '2 columns', icon: Columns2 },
@@ -238,9 +239,20 @@ const Collection = ({ socket }) => {
         });
 
         channel.on('broadcast', { event: 'watched' }, ({ payload }) => {
-            itemsRef.current = itemsRef.current.map(item => (
-                item._id === payload.id ? { ...item, watched: !item.watched } : item
-            ));
+            itemsRef.current = itemsRef.current.map(item => {
+                if (item._id !== payload.id) return item;
+                // New broadcasts carry the explicit watched + completedAt
+                // values from the server. Older broadcasts (rare, only
+                // from a tab on a previous deploy) just signal a toggle —
+                // fall back to flipping the local watched flag.
+                const watched = typeof payload.watched === 'boolean'
+                    ? payload.watched
+                    : !item.watched;
+                const completedAt = 'completedAt' in payload
+                    ? payload.completedAt
+                    : item.completedAt;
+                return { ...item, watched, completedAt };
+            });
             setItems(itemsRef.current);
         });
 
@@ -371,6 +383,15 @@ const Collection = ({ socket }) => {
             result = [...result].sort((a, b) => b.title.localeCompare(a.title));
         } else if (sortValue === 'oldest') {
             result = [...result].sort((a, b) => addedAt(a) - addedAt(b));
+        } else if (sortValue === 'watched') {
+            // Recently watched first, never-watched items at the bottom
+            // ordered by date added so they're not in arbitrary order.
+            result = [...result].sort((a, b) => {
+                const ca = a?.completedAt || 0;
+                const cb = b?.completedAt || 0;
+                if (ca !== cb) return cb - ca;
+                return addedAt(b) - addedAt(a);
+            });
         } else { /* recent / newest first */
             result = [...result].sort((a, b) => addedAt(b) - addedAt(a));
         }

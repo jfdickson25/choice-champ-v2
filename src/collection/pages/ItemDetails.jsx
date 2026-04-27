@@ -194,7 +194,17 @@ const ItemDetails = () => {
             method: 'POST',
             body: JSON.stringify({ watched: nextComplete })
         })
-        .then(() => broadcast(`collection:${collection.collectionId}`, 'watched', { id: collection.itemId }))
+        .then((data) => {
+            // Server stamps completed_at when watched flips on, clears
+            // it when off. Pass both through the broadcast so other
+            // collaborators' grids can sort by Recently Watched without
+            // a refetch.
+            broadcast(`collection:${collection.collectionId}`, 'watched', {
+                id: collection.itemId,
+                watched: nextComplete,
+                completedAt: data?.completedAt ?? null,
+            });
+        })
         .catch(err => {
             console.log(err);
             // Roll back optimistic update on failure.

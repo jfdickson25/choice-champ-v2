@@ -13,6 +13,7 @@ const itemToLegacy = (row) => ({
     watched: row.complete,
     itemId: row.item_id,
     timestamp: row.added_at ? Math.floor(new Date(row.added_at).getTime() / 1000) : null,
+    completedAt: row.completed_at ? Math.floor(new Date(row.completed_at).getTime() / 1000) : null,
 });
 
 // Map a collections DB row (with nested items) to the legacy shape.
@@ -157,15 +158,26 @@ router
         if (error) return res.status(500).json({ errMsg: error.message });
         res.json({ poster });
     })
-    // Toggle an item's "complete" flag (legacy: watched).
+    // Toggle an item's "complete" flag (legacy: watched). Stamps
+    // completed_at so we can sort "Recently Watched" client-side, or
+    // clears it if the user is un-marking the item.
     .post('/items/:collectionId/:itemId', async (req, res) => {
         const { itemId } = req.params;
-        const { error } = await supabase
+        const watched = Boolean(req.body.watched);
+        const { data, error } = await supabase
             .from('collection_items')
-            .update({ complete: Boolean(req.body.watched) })
-            .eq('id', itemId);
+            .update({
+                complete: watched,
+                completed_at: watched ? new Date().toISOString() : null,
+            })
+            .eq('id', itemId)
+            .select('completed_at')
+            .maybeSingle();
         if (error) return res.status(500).json({ errMsg: error.message });
-        res.json({ msg: 'Item Updated' });
+        const completedAt = data && data.completed_at
+            ? Math.floor(new Date(data.completed_at).getTime() / 1000)
+            : null;
+        res.json({ msg: 'Item Updated', completedAt });
     })
     // Delete an item from a collection.
     .delete('/items/:collectionId/:itemId', async (req, res) => {
@@ -193,7 +205,7 @@ router
 
         const { data: memberships, error: mErr } = await supabase
             .from('collection_members')
-            .select('collections!inner(id, name, type, collection_items(id, item_id, complete))')
+            .select('collections!inner(id, name, type, collection_items(id, item_id, complete, completed_at))')
             .eq('user_id', userId)
             .eq('collections.type', mediaType);
         if (mErr) return res.status(500).json({ errMsg: mErr.message });
@@ -207,6 +219,9 @@ router
                 exists: Boolean(hit),
                 itemId: hit ? hit.id : undefined,
                 complete: hit ? Boolean(hit.complete) : false,
+                completedAt: hit && hit.completed_at
+                    ? Math.floor(new Date(hit.completed_at).getTime() / 1000)
+                    : null,
             };
         });
 
