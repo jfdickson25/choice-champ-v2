@@ -322,6 +322,19 @@ const ItemDetails = () => {
                     )}
                     <h1 className='item-details-title' style={{ color }}>{details.title}</h1>
 
+                    {infoRows.length > 0 && (
+                        <section className='item-details-section'>
+                            <div className='item-details-card'>
+                                {infoRows.map(({ label, value }) => (
+                                    <div key={label} className='item-details-row'>
+                                        <span className='item-details-row-label'>{label}</span>
+                                        <span className='item-details-row-value'>{value}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
+                    )}
+
                     <section className='item-details-section'>
                         <div className='item-details-card'>
                             <div className='item-details-row item-details-watched-row'>
@@ -343,24 +356,6 @@ const ItemDetails = () => {
                                     </button>
                                 </div>
                             </div>
-                        </div>
-                    </section>
-
-                    {infoRows.length > 0 && (
-                        <section className='item-details-section'>
-                            <div className='item-details-card'>
-                                {infoRows.map(({ label, value }) => (
-                                    <div key={label} className='item-details-row'>
-                                        <span className='item-details-row-label'>{label}</span>
-                                        <span className='item-details-row-value'>{value}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </section>
-                    )}
-
-                    <section className='item-details-section'>
-                        <div className='item-details-card'>
                             <button
                                 type='button'
                                 className='item-details-rating-row'
