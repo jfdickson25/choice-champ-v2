@@ -280,13 +280,18 @@ router
             } else if(type === 'game') {
                 const pageSize = 20;
 
-                // RAWG parent_platforms IDs:
-                //   1 = PC, 2 = PlayStation, 3 = Xbox, 7 = Nintendo
-                // Maps to brand-level filtering so a request for
-                // "playstation" covers PS5/PS4/PS3/etc. transparently.
-                const PLATFORM_IDS = { pc: 1, playstation: 2, xbox: 3, nintendo: 7 };
+                // RAWG specific platform IDs for current-gen filtering:
+                //   4   = PC
+                //   187 = PlayStation 5
+                //   186 = Xbox Series S/X
+                //   7   = Nintendo Switch (includes Switch 2 — RAWG
+                //                          hasn't split that out yet)
+                // Using `platforms` (not `parent_platforms`) so we can
+                // be specific about generations rather than rolling
+                // every legacy console into the brand bucket.
+                const PLATFORM_IDS = { pc: 4, ps5: 187, 'xbox-series': 186, switch: 7 };
                 const platformId = PLATFORM_IDS[req.query.platform];
-                const platformParam = platformId ? `&parent_platforms=${platformId}` : '';
+                const platformParam = platformId ? `&platforms=${platformId}` : '';
 
                 // Collapse re-releases ("Game: Deluxe Edition", "Game –
                 // Game of the Year Cut", etc.) onto their base title so

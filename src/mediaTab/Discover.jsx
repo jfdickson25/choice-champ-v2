@@ -56,7 +56,12 @@ const DiscoverFeed = ({ collectionType, color, onSearchingChange }) => {
     const [platform, setPlatform] = useState(() => {
         if (collectionType !== 'game') return 'all';
         const saved = localStorage.getItem(platformKey);
-        return ['all', 'pc', 'playstation', 'xbox', 'nintendo'].includes(saved) ? saved : 'all';
+        // Migrate users who had brand-level options saved (the prior
+        // values: 'playstation', 'xbox', 'nintendo') onto the new
+        // current-gen-specific equivalents.
+        const legacyMigration = { playstation: 'ps5', xbox: 'xbox-series', nintendo: 'switch' };
+        const migrated = legacyMigration[saved] || saved;
+        return ['all', 'pc', 'ps5', 'xbox-series', 'switch'].includes(migrated) ? migrated : 'all';
     });
     const inputRef = useRef(null);
 
@@ -66,15 +71,16 @@ const DiscoverFeed = ({ collectionType, color, onSearchingChange }) => {
         { value: 4, label: '4 columns', icon: Columns4 },
     ];
 
-    // Game-only: brand-level platform filter passed through to RAWG's
-    // parent_platforms param so a request for "playstation" covers
-    // PS5/PS4/PS3/etc. transparently.
+    // Game-only: current-gen platform filter, mapped server-side to
+    // RAWG's specific `platforms` IDs (PS5, Xbox Series S/X, Switch).
+    // Switch 2 games show under "Nintendo Switch" until RAWG splits
+    // them into a separate platform.
     const platformOptions = collectionType === 'game' ? [
-        { value: 'all',         label: 'All platforms' },
-        { value: 'pc',          label: 'PC' },
-        { value: 'playstation', label: 'PlayStation' },
-        { value: 'xbox',        label: 'Xbox' },
-        { value: 'nintendo',    label: 'Nintendo' },
+        { value: 'all',          label: 'All platforms' },
+        { value: 'pc',           label: 'PC' },
+        { value: 'ps5',          label: 'PS5' },
+        { value: 'xbox-series',  label: 'Xbox Series X/S' },
+        { value: 'switch',       label: 'Nintendo Switch' },
     ] : [];
 
     const handleViewChange = (v) => {
