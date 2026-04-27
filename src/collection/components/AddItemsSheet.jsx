@@ -3,7 +3,7 @@ import { Dialog } from '@mui/material';
 import { Plus, Check, Search as SearchIcon } from 'lucide-react';
 
 import Loading from '../../shared/components/Loading';
-import { fetchDiscover, fetchSearch, SUBTABS } from '../../mediaTab/discoverApi';
+import { fetchSearch } from '../../mediaTab/discoverApi';
 
 import './AddItemsSheet.css';
 
@@ -42,35 +42,39 @@ const AddItemsSheet = ({
         return () => clearTimeout(id);
     }, [query]);
 
-    // Fetch results — searches when query >= MIN_SEARCH_LENGTH, else
-    // shows the default discover feed for this media type so users have
-    // something to tap right after creating an empty collection.
+    // Fetch results only once the user has typed at least MIN_SEARCH_LENGTH
+    // characters — same blank-until-query behavior Discover uses in search
+    // mode. Avoids hitting upstream APIs (and burning quota) for users
+    // who open the sheet just to dismiss it.
     useEffect(() => {
         if (!open) return;
         let cancelled = false;
         const trimmed = debouncedQuery.trim();
         const isSearching = trimmed.length >= MIN_SEARCH_LENGTH;
-        const defaultSubtab = (SUBTABS[mediaType] || [])[0]?.key;
+
+        if (!isSearching) {
+            setItems([]);
+            setLoading(false);
+            setError(null);
+            return;
+        }
 
         setLoading(true);
         setError(null);
 
-        const promise = isSearching
-            ? fetchSearch(mediaType, trimmed)
-            : (defaultSubtab ? fetchDiscover(mediaType, defaultSubtab) : Promise.resolve({ items: [] }));
-
-        promise.then(data => {
-            if (cancelled) return;
-            // Backend returns { results, page, totalPages } for both
-            // /discover and /discover/.../search — match what Discover
-            // already does rather than inventing a new contract.
-            setItems(Array.isArray(data?.results) ? data.results : []);
-            setLoading(false);
-        }).catch(err => {
-            if (cancelled) return;
-            setError(err.message || 'Failed to load');
-            setLoading(false);
-        });
+        fetchSearch(mediaType, trimmed)
+            .then(data => {
+                if (cancelled) return;
+                // Backend returns { results, page, totalPages } for /discover
+                // and /discover/.../search — match what Discover already does.
+                setItems(Array.isArray(data?.results) ? data.results : []);
+                setLoading(false);
+            })
+            .catch(err => {
+                if (cancelled) return;
+                setError(err.message || 'Failed to load');
+                setLoading(false);
+            });
 
         return () => { cancelled = true; };
     }, [open, mediaType, debouncedQuery]);
@@ -154,9 +158,9 @@ const AddItemsSheet = ({
                     )}
                     {!loading && !error && items.length === 0 && (
                         <div className='add-items-sheet-empty'>
-                            {debouncedQuery
-                                ? `No results for "${debouncedQuery}"`
-                                : 'No items to show'}
+                            {debouncedQuery.trim().length >= MIN_SEARCH_LENGTH
+                                ? `No results for "${debouncedQuery.trim()}"`
+                                : 'Type to search'}
                         </div>
                     )}
                     {!loading && !error && items.length > 0 && (
