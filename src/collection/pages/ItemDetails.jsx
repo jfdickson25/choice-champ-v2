@@ -152,7 +152,7 @@ const ItemDetails = () => {
         const posterToStore = passedPoster || details.poster;
         api(`/collections/items/${addCollectionId}`, {
             method: 'POST',
-            body: JSON.stringify([{ title: details.title, id: tempId, poster: posterToStore }])
+            body: JSON.stringify([{ title: details.title, id: tempId, poster: posterToStore, releaseDate: details.releaseDate || null }])
         })
         .then(data => {
             const newItem = data.newItems[0];

@@ -5,7 +5,7 @@ import { supabase } from '../../shared/lib/supabase';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../shared/context/auth-context';
 import Loading from '../../shared/components/Loading';
-import { ArrowLeft, Check, MoreVertical, Pencil, Share2, ListOrdered, Trash, ArrowDownAZ, ArrowDownZA, ArrowDownWideNarrow, ArrowUpWideNarrow, Eye, Gamepad2, Dices, SlidersHorizontal, Layers, EyeOff, GripVertical, Search, Users, X, Columns2, Columns3, Columns4, Clapperboard, Star } from 'lucide-react';
+import { ArrowLeft, Check, MoreVertical, Pencil, Share2, ListOrdered, Trash, ArrowDownAZ, ArrowDownZA, ArrowDownWideNarrow, ArrowUpWideNarrow, Eye, Gamepad2, Dices, SlidersHorizontal, Layers, EyeOff, GripVertical, Search, Users, X, Columns2, Columns3, Columns4, Clapperboard, Star, Calendar } from 'lucide-react';
 import RetroTv from '../../shared/components/Icons/RetroTv';
 import { Menu, MenuItem, Dialog } from '@mui/material';
 
@@ -143,6 +143,8 @@ const Collection = ({ socket }) => {
         { value: 'custom',       label: 'Custom',           icon: GripVertical },
         { value: 'recent',       label: 'Date Added ↓',     icon: ArrowDownWideNarrow },
         { value: 'oldest',       label: 'Date Added ↑',     icon: ArrowUpWideNarrow },
+        { value: 'release-desc', label: 'Release Date ↓',   icon: Calendar },
+        { value: 'release-asc',  label: 'Release Date ↑',   icon: Calendar },
         { value: 'watched',      label: 'Recently Watched', icon: Eye },
         { value: 'rating-desc',  label: 'Rating ↓',         icon: Star },
         { value: 'rating-asc',   label: 'Rating ↑',         icon: Star },
@@ -436,6 +438,21 @@ const Collection = ({ socket }) => {
                 const ca = a?.completedAt || 0;
                 const cb = b?.completedAt || 0;
                 if (ca !== cb) return cb - ca;
+                return addedAt(b) - addedAt(a);
+            });
+        } else if (sortValue === 'release-desc' || sortValue === 'release-asc') {
+            // Release date sorts lexicographically since releaseDate is
+            // a 'YYYY-MM-DD' string from the server (board games store
+            // YYYY-01-01 since BGG only gives a year). Items missing a
+            // release date fall to the bottom either direction.
+            const dir = sortValue === 'release-desc' ? -1 : 1;
+            result = [...result].sort((a, b) => {
+                const ra = a?.releaseDate || null;
+                const rb = b?.releaseDate || null;
+                if (!ra && !rb) return addedAt(b) - addedAt(a);
+                if (!ra) return 1;
+                if (!rb) return -1;
+                if (ra !== rb) return ra < rb ? dir : -dir;
                 return addedAt(b) - addedAt(a);
             });
         } else if (sortValue === 'rating-desc' || sortValue === 'rating-asc') {

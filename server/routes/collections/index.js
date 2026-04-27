@@ -14,7 +14,23 @@ const itemToLegacy = (row) => ({
     itemId: row.item_id,
     timestamp: row.added_at ? Math.floor(new Date(row.added_at).getTime() / 1000) : null,
     completedAt: row.completed_at ? Math.floor(new Date(row.completed_at).getTime() / 1000) : null,
+    releaseDate: row.release_date || null,
 });
+
+// Coerce whatever a source API gave us into a Postgres DATE string
+// ('YYYY-MM-DD'). Movies/TV/games already arrive in that shape from
+// TMDB / RAWG. Board games arrive as a year integer/string from BGG —
+// pad to Jan 1 of that year so all four media types sort by the same
+// column, with the understanding that board precision is year-only.
+const normalizeReleaseDate = (raw, mediaType) => {
+    if (raw == null || raw === '') return null;
+    const s = String(raw).trim();
+    if (mediaType === 'board') {
+        const m = s.match(/^(\d{4})/);
+        return m ? `${m[1]}-01-01` : null;
+    }
+    return /^\d{4}-\d{2}-\d{2}/.test(s) ? s.slice(0, 10) : null;
+};
 
 // Map a collections DB row (with nested items) to the legacy shape.
 const collectionToLegacy = (c) => ({
@@ -149,6 +165,10 @@ router
                     title: name,
                     poster: parsed.boardgames.boardgame.image?._text,
                     complete: false,
+                    release_date: normalizeReleaseDate(
+                        parsed.boardgames.boardgame.yearpublished?._text,
+                        'board'
+                    ),
                 });
             } else {
                 inserts.push({
@@ -158,6 +178,7 @@ router
                     title: item.title,
                     poster: item.poster,
                     complete: false,
+                    release_date: normalizeReleaseDate(item.releaseDate, collection.type),
                 });
             }
         }
