@@ -66,11 +66,18 @@ const DiscoverFeed = ({ collectionType, color, onSearchingChange }) => {
     };
 
     const trimmedQuery = debouncedQuery.trim();
-    const isSearching = trimmedQuery.length > 0;
+    // Require at least 2 chars before hitting the search APIs. A single
+    // letter matches thousands of irrelevant titles and burns a request
+    // against RAWG / BGG / TMDB free-tier quotas for no real value.
+    const isSearching = trimmedQuery.length >= 2;
     const hasMultipleSubtabs = subtabs.length > 1;
 
     useEffect(() => {
-        const id = setTimeout(() => setDebouncedQuery(query), 300);
+        // 500ms debounce on Discover search input. The fetch hits live
+        // third-party APIs (TMDB, RAWG, BGG) on each query change and
+        // each of those have free-tier quotas worth conserving — wait
+        // for the user to pause typing before firing.
+        const id = setTimeout(() => setDebouncedQuery(query), 500);
         return () => clearTimeout(id);
     }, [query]);
 
