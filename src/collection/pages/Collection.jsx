@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState, useContext, useRef } from 'react';
 import { BACKEND_URL } from '../../shared/config';
 import { api } from '../../shared/lib/api';
 import { supabase } from '../../shared/lib/supabase';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../../shared/context/auth-context';
 import Loading from '../../shared/components/Loading';
 import { ArrowLeft, Check, MoreVertical, Pencil, Share2, ListOrdered, Trash, ArrowDownAZ, ArrowDownZA, ArrowDownWideNarrow, ArrowUpWideNarrow, Eye, Gamepad2, Dices, SlidersHorizontal, Layers, EyeOff, GripVertical, Search, Users, X, Columns2, Columns3, Columns4, Clapperboard, Star, Calendar } from 'lucide-react';
@@ -42,6 +42,14 @@ const Collection = ({ socket }) => {
     const customOrderKey = `choice-champ:custom-order:${collectionId}`;
     const viewCountKey = `choice-champ:view-count:${collectionId}`;
 
+    // URL-backed filter + query state so navigating into ItemDetails
+    // and using the back button restores what the user had set,
+    // matching the Discover pattern. Sort + view stay in localStorage
+    // because those are sticky preferences, not session state.
+    const [searchParams, setSearchParams] = useSearchParams();
+    const urlFilter = searchParams.get('filter');
+    const urlQuery = searchParams.get('q') || '';
+
     const [items, setItems] = useState([]);
     const [isEdit, setIsEdit] = useState(false);
     const [shareCode, setShareCode] = useState(0);
@@ -50,7 +58,9 @@ const Collection = ({ socket }) => {
     const [sortValue, setSortValue] = useState(() =>
         localStorage.getItem(`choice-champ:custom-order:${collectionId}`) ? 'custom' : 'recent'
     );
-    const [filterValue, setFilterValue] = useState('all');
+    const [filterValue, setFilterValue] = useState(
+        ['watched', 'unwatched'].includes(urlFilter) ? urlFilter : 'all'
+    );
     const [viewValue, setViewValue] = useState(() => {
         const saved = localStorage.getItem(`choice-champ:view-count:${collectionId}`);
         const parsed = saved ? parseInt(saved, 10) : 2;
@@ -290,6 +300,19 @@ const Collection = ({ socket }) => {
         return () => { supabase.removeChannel(channel); channelRef.current = null; };
     }, [collectionId]);
 
+    // Mirror filter + query into the URL so navigating to ItemDetails
+    // and tapping back restores both. Defaults are dropped from the
+    // URL to keep the bar clean.
+    useEffect(() => {
+        const next = new URLSearchParams(searchParams);
+        if (filterValue === 'all') next.delete('filter'); else next.set('filter', filterValue);
+        const trimmed = query.trim();
+        if (trimmed) next.set('q', trimmed); else next.delete('q');
+        if (next.toString() !== searchParams.toString()) {
+            setSearchParams(next, { replace: true });
+        }
+    }, [filterValue, query, searchParams, setSearchParams]);
+
     // Personal rating changes from ItemDetails (same tab, same user).
     // Not broadcast through Supabase since ratings are per-user — other
     // collection members shouldn't see them — and the only place a stale
@@ -378,8 +401,8 @@ const Collection = ({ socket }) => {
      * help and direction from this youtube video Web dev simplified
      * https://youtu.be/E1cklb4aeXA
      ***********************************************************/
-    const [query, setQuery] = useState('');
-    const [searchModeActive, setSearchModeActive] = useState(false);
+    const [query, setQuery] = useState(urlQuery);
+    const [searchModeActive, setSearchModeActive] = useState(urlQuery.length > 0);
     const searchInputRef = useRef(null);
 
     const enterSearch = () => {
