@@ -53,7 +53,7 @@ const PasswordReset = () => {
     };
 
     return (
-        <div className='center'>
+        <div className='center auth-page'>
             <form onSubmit={handleSubmit(onSubmit)}>
                 <img src="/img/Logo/choice-champ-title.png" alt="Choice Champ Logo" id="logo" />
                 <div className='seperator' />

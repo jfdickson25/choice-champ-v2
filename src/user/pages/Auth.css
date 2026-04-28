@@ -49,3 +49,31 @@ h3 {
         width: 30vw;
     }
   }
+
+  /* Auth-page-only overrides — keep the rest of the app's yellow
+     primary buttons unchanged. */
+  .auth-page .primary-btn {
+    background-color: #000;
+    color: #fff;
+  }
+  .auth-page .primary-btn:active:not(:disabled) {
+    background-color: #1a1a1a;
+  }
+
+  /* iOS Safari highlights autofilled inputs with a pale yellow
+     background and dark text, overriding our dark .text-input
+     palette. The box-shadow inset is the canonical override —
+     fills the input with our background color from inside, and
+     -webkit-text-fill-color forces the text to white. The long
+     transition keeps the override from flashing back to the
+     default if Safari re-applies styles. */
+  .auth-page .text-input:-webkit-autofill,
+  .auth-page .text-input:-webkit-autofill:hover,
+  .auth-page .text-input:-webkit-autofill:focus,
+  .auth-page .text-input:-webkit-autofill:active {
+    -webkit-text-fill-color: #fff;
+    -webkit-box-shadow: 0 0 0 1000px #312E2E inset;
+    box-shadow: 0 0 0 1000px #312E2E inset;
+    caret-color: #fff;
+    transition: background-color 5000s ease-in-out 0s;
+  }
