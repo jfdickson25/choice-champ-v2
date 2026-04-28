@@ -556,7 +556,15 @@ const isOwnerVoting = userType === 'owner' && collectionItems.length > 1 && !fin
 
   return (
     <div className='content party-voting'>
-        { (collectionItems.length === 1 || finished) && ( <Confetti height={Math.max( document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight ) } width={window.innerWidth} style={{zIndex: -1}}/> )}
+        { (collectionItems.length === 1 || finished) && (
+            <Confetti
+                width={window.innerWidth}
+                height={window.innerHeight}
+                numberOfPieces={400}
+                recycle={false}
+                style={{ zIndex: 1000, pointerEvents: 'none' }}
+            />
+        )}
 
         <div className='party-voting-sticky-header'>
             <div className='party-voting-top-row'>
