@@ -1,24 +1,25 @@
 import React, { useState, useTransition, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Clapperboard, Gamepad2, Dices, PartyPopper } from 'lucide-react';
 
-import RetroTv from '../Icons/RetroTv';
+import { MEDIA_TYPE_ORDER, MEDIA_TYPES } from '../../lib/mediaTypes';
 import './BottomNav.css';
 
 const ICON_SIZE = 32;
 const ICON_STROKE = 1.75;
 
-// nudgeY shifts certain icons down a few pixels to visually align their
-// optical centers with the others. RetroTv's body sits high (antennae fill
-// the upper space) and Gamepad2's grip is bottom-heavy — both feel "too
-// high" when sized identically with Clapperboard / PartyPopper / Dices.
-const tabs = [
-    { to: '/collections/movie', Icon: Clapperboard, color: '#FCB016', key: 'movie' },
-    { to: '/collections/tv',    Icon: RetroTv,      color: '#F04C53', key: 'tv',    nudgeY: 3 },
-    { to: '/party',             Icon: PartyPopper,  color: '#A855F7', key: 'party' },
-    { to: '/collections/board', Icon: Dices,        color: '#45B859', key: 'board' },
-    { to: '/collections/game',  Icon: Gamepad2,     color: '#2482C5', key: 'game',  nudgeY: 3 },
-];
+// nudgeY shifts certain icons down a few pixels so their optical centers
+// align with the others. RetroTv's body sits high (antennae fill the
+// upper space) and Gamepad2's grip is bottom-heavy — both feel "too
+// high" when sized identically with Clapperboard / Dices / BookOpen.
+const NUDGE_Y = { tv: 3, game: 3 };
+
+const tabs = MEDIA_TYPE_ORDER.map(key => ({
+    key,
+    to: `/collections/${key}`,
+    Icon: MEDIA_TYPES[key].Icon,
+    color: MEDIA_TYPES[key].color,
+    nudgeY: NUDGE_Y[key],
+}));
 
 const BottomNav = () => {
     const navigate = useNavigate();

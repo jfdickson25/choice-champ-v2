@@ -1,0 +1,76 @@
+/* Floating action button hovering 12px above the bottom nav, dead-center.
+   Sits above .bottom-nav (z-index 100) but below modal/dialog layers. */
+.party-fab {
+    position: fixed;
+    left: 50%;
+    bottom: calc(72px + env(safe-area-inset-bottom, 0) + 12px);
+    transform: translateX(-50%);
+    width: 64px;
+    height: 64px;
+    border: none;
+    padding: 0;
+    border-radius: 50%;
+    background-color: transparent;
+    cursor: pointer;
+    z-index: 110;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* Lift effect — implies "this thing is above the nav". */
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+    transition: transform 120ms ease-out, box-shadow 120ms ease-out;
+}
+
+.party-fab:active {
+    transform: translateX(-50%) scale(0.94);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.6);
+}
+
+/* Wheel face — five equal wedges in the media-type colors, ordered
+   clockwise from the top so the most-tapped color (Movies yellow) sits
+   centered at 12 o'clock. Order: movie, board, game, book, tv. */
+.party-fab-wheel {
+    position: absolute;
+    inset: 4px;
+    border-radius: 50%;
+    background: conic-gradient(
+        from -36deg,
+        #FCB016 0 72deg,
+        #45B859 72deg 144deg,
+        #2482C5 144deg 216deg,
+        #A855F7 216deg 288deg,
+        #F04C53 288deg 360deg
+    );
+    /* A subtle dark ring keeps wedge edges from washing out against
+       a dark background. */
+    box-shadow:
+        inset 0 0 0 2px rgba(0, 0, 0, 0.45),
+        inset 0 0 12px rgba(0, 0, 0, 0.25);
+}
+
+/* Centered hub disk — Choice Champ logo–style, gives the wheel an
+   anchor and breaks up the conic-gradient at the rotation point. */
+.party-fab-wheel::after {
+    content: '';
+    position: absolute;
+    inset: 38%;
+    border-radius: 50%;
+    background-color: #312E2E;
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.6);
+}
+
+/* Pointer needle pinned at 12 o'clock, mimicking the Choice Champ
+   logo. Built as a CSS triangle to keep this component dependency-free. */
+.party-fab-pointer {
+    position: absolute;
+    top: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
+    border-top: 12px solid #ffffff;
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5));
+    pointer-events: none;
+}

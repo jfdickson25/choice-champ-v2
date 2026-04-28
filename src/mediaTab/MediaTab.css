@@ -6,6 +6,29 @@
     padding: 0 16px calc(env(safe-area-inset-bottom, 0) + 88px) 16px;
 }
 
+/* Placeholder shown for media types whose API hasn't shipped yet
+   (today: Books). Centered icon + title + "Coming soon." */
+.media-tab-coming-soon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 30vh 16px env(safe-area-inset-bottom, 0) 16px;
+    text-align: center;
+}
+.media-tab-coming-soon h1 {
+    margin: 0;
+    font-size: 26pt;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+}
+.media-tab-coming-soon p {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 12pt;
+}
+
 .media-tab-sticky-header {
     position: sticky;
     top: 0;

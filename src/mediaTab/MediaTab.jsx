@@ -1,8 +1,7 @@
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { api } from '../shared/lib/api';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Check, Plus, GripVertical, User, Clapperboard, Gamepad2, Dices } from 'lucide-react';
-import RetroTv from '../shared/components/Icons/RetroTv';
+import { Check, Plus, GripVertical, User } from 'lucide-react';
 import { Dialog } from '@mui/material';
 
 import SegmentedToggle from '../shared/components/SegmentedToggle/SegmentedToggle';
@@ -10,15 +9,9 @@ import Collections from '../collections/pages/Collections';
 import Discover from './Discover';
 import Button from '../shared/components/FormElements/Button';
 import { AuthContext } from '../shared/context/auth-context';
+import { getMediaType } from '../shared/lib/mediaTypes';
 
 import './MediaTab.css';
-
-const TYPE_CONFIG = {
-    movie: { title: 'Movies',      color: '#FCB016', Icon: Clapperboard, noun: 'movie' },
-    tv:    { title: 'TV Shows',    color: '#F04C53', Icon: RetroTv,      noun: 'show' },
-    game:  { title: 'Video Games', color: '#2482C5', Icon: Gamepad2,     noun: 'game' },
-    board: { title: 'Board Games', color: '#45B859', Icon: Dices,        noun: 'game' },
-};
 
 const VIEW_OPTIONS = [
     { value: 'discover', label: 'Discover' },
@@ -46,11 +39,31 @@ const persistView = (type, view) => {
     }
 };
 
-const MediaTab = () => {
-    const { type } = useParams();
+// Stub for media types whose API + Discover branches haven't shipped
+// yet. Renders the type's title in its color, a "coming soon" message,
+// and lets BottomNav stay visible so the user can tab elsewhere. Safe
+// to early-return *before* MediaTab's hooks since App.jsx mounts this
+// with `key={type}`, so the type never changes within an instance.
+const ComingSoonTab = ({ config }) => {
+    const auth = useContext(AuthContext);
+    useEffect(() => {
+        auth.showFooterHandler(true);
+    }, [auth]);
+    const Icon = config.Icon;
+    return (
+        <div className='media-tab'>
+            <div className='media-tab-coming-soon'>
+                {Icon && <Icon size={64} strokeWidth={1.5} color={config.color} />}
+                <h1 style={{ color: config.color }}>{config.title}</h1>
+                <p>Coming soon.</p>
+            </div>
+        </div>
+    );
+};
+
+const MediaTabFull = ({ type, config }) => {
     const navigate = useNavigate();
     const auth = useContext(AuthContext);
-    const config = TYPE_CONFIG[type] || { title: type, color: '#FCB016', Icon: null, noun: 'item' };
     const orderKey = `choice-champ:collections-order:${type}`;
 
     const [view, setView] = useState(() => getSavedView(type));
@@ -319,6 +332,17 @@ const MediaTab = () => {
             </Dialog>
         </div>
     );
+};
+
+// Thin dispatcher: pick the placeholder or the full implementation based
+// on whether the type's API has shipped yet. App.jsx mounts this with
+// `key={type}`, so the chosen branch is stable for an instance and React
+// won't see a hook-order change.
+const MediaTab = () => {
+    const { type } = useParams();
+    const config = getMediaType(type);
+    if (config.comingSoon) return <ComingSoonTab config={config} />;
+    return <MediaTabFull type={type} config={config} />;
 };
 
 export default MediaTab;
