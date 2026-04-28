@@ -583,12 +583,16 @@ const Party = () => {
 const isOwnerVoting = userType === 'owner' && collectionItems.length > 1 && !finished;
 
   return (
-    <div className='content party-voting'>
+    <div className={`content party-voting ${finished ? 'is-finished' : ''}`}>
         { (collectionItems.length === 1 || finished) && (
             <Confetti
                 width={pageSize.w}
                 height={pageSize.h}
-                numberOfPieces={200}
+                // Density scales with the page height — short pages get
+                // ~250 pieces, long pages with many runner-ups get more
+                // so the celebration doesn't feel sparse below the fold.
+                // Capped to keep mobile renderers happy.
+                numberOfPieces={Math.min(800, Math.round(pageSize.h / 4))}
                 // Anchor to the document (position: absolute) and size
                 // the canvas to the full scroll height so confetti rains
                 // through every runner-up below the fold, not just the

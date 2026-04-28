@@ -53,6 +53,23 @@
     padding-bottom: 4px;
 }
 
+/* When the winner has been crowned, drop the sticky header's solid
+   background so confetti rains visibly past the X button area. Keeps
+   the sticky positioning + z-index 10 so the X button itself stays
+   pinned to the viewport top and stacks above runner-up cards
+   scrolling underneath — still clickable at any time. */
+.party-voting.is-finished .party-voting-sticky-header {
+    background-color: transparent;
+}
+
+/* Belt-and-suspenders: explicit z-index on the X button so it's
+   guaranteed in front of any conceivable content even if a future
+   element gets positioned. */
+.party-voting.is-finished .party-voting-top-row .icon-btn {
+    position: relative;
+    z-index: 11;
+}
+
 .party-voting-actions {
     display: flex;
     align-items: center;
