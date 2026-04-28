@@ -352,20 +352,24 @@ router
                         releaseDate: item.released
                     }));
 
-                    // Re-rank by how closely each title matches the query so
-                    // exact / starts-with / whole-word hits float to the top.
-                    // Same tiering as the board-game search — see comment
-                    // there for why the whole-word tier uses a regex.
+                    // Re-rank by how closely each title matches the query.
+                    // Note this is intentionally one tier looser than the
+                    // board-game search: exact match and starts-with are
+                    // bucketed together so that for a series, the newest
+                    // entry wins regardless of whether it's titled exactly
+                    // "Animal Crossing" or "Animal Crossing: New Horizons".
+                    // (Board games keep them separate because the "exact"
+                    // hit is usually the base game, which you want before
+                    // its expansions.)
                     const queryLower = q.trim().toLowerCase();
                     const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                     const wholeWordRe = new RegExp(`\\b${escapeRe(queryLower)}\\b`);
                     const rankMatch = (title) => {
                         const t = (title || '').toLowerCase();
-                        if (t === queryLower) return 0;
-                        if (t.startsWith(queryLower)) return 1;
-                        if (wholeWordRe.test(t)) return 2;
-                        if (t.includes(queryLower)) return 3;
-                        return 4;
+                        if (t.startsWith(queryLower)) return 0;   // exact + starts-with
+                        if (wholeWordRe.test(t)) return 1;        // whole-word
+                        if (t.includes(queryLower)) return 2;     // contains
+                        return 3;                                  // RAWG fuzzy hit
                     };
                     // Within the same tier, prefer newer releases — for
                     // "Animal Crossing" the user wants New Horizons (2020)
