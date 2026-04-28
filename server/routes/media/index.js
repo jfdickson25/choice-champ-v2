@@ -332,7 +332,13 @@ router
                     if(!q.trim()) {
                         return res.send({ results: [], page: 1, totalPages: 1 });
                     }
-                    const rawgRes = await fetch(`https://api.rawg.io/api/games?key=${process.env.RAWG_API_KEY}&search=${encodeURIComponent(q)}${platformParam}&ordering=-added&page=${page}&page_size=${pageSize}`);
+                    // Drop ordering=-added (popularity) — it overrides RAWG's
+                    // built-in relevance sort, which is what we want for a
+                    // text search. search_precise=true disables RAWG's fuzzy
+                    // matching that otherwise floats prefix-only hits like
+                    // "Animlab|VR" / "Anomaly" above the actual "Animal
+                    // Crossing" titles.
+                    const rawgRes = await fetch(`https://api.rawg.io/api/games?key=${process.env.RAWG_API_KEY}&search=${encodeURIComponent(q)}&search_precise=true${platformParam}&page=${page}&page_size=${pageSize}`);
                     const data = await rawgRes.json();
 
                     const results = dedupeEditions(data.results || []).map(item => ({
@@ -343,8 +349,31 @@ router
                         releaseDate: item.released
                     }));
 
+                    // Re-rank by how closely each title matches the query so
+                    // exact / starts-with / whole-word hits float to the top.
+                    // Same tiering as the board-game search — see comment
+                    // there for why the whole-word tier uses a regex.
+                    const queryLower = q.trim().toLowerCase();
+                    const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const wholeWordRe = new RegExp(`\\b${escapeRe(queryLower)}\\b`);
+                    const rankMatch = (title) => {
+                        const t = (title || '').toLowerCase();
+                        if (t === queryLower) return 0;
+                        if (t.startsWith(queryLower)) return 1;
+                        if (wholeWordRe.test(t)) return 2;
+                        if (t.includes(queryLower)) return 3;
+                        return 4;
+                    };
+                    // Stable sort within tier preserves RAWG's relevance
+                    // order, so popular matches still beat obscure ones at
+                    // the same tier.
+                    const ranked = results
+                        .map((r, i) => ({ r, i, tier: rankMatch(r.title) }))
+                        .sort((a, b) => (a.tier - b.tier) || (a.i - b.i))
+                        .map(({ r }) => r);
+
                     return res.send({
-                        results,
+                        results: ranked,
                         page,
                         totalPages: data.count ? Math.ceil(data.count / pageSize) : 1
                     });
