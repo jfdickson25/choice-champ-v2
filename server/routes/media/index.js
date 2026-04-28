@@ -471,7 +471,14 @@ router
                     if(!q.trim()) {
                         return res.send({ results: [], page: 1, totalPages: 1 });
                     }
-                    const bggRes = await fetch(`https://boardgamegeek.com/xmlapi2/search?query=${encodeURIComponent(q)}&type=boardgame`, {
+                    // BGG's xmlapi2 search silently drops some games — e.g.
+                    // "Quest" (id 316287) doesn't show up in the v2 result
+                    // set even though its primary title matches the query.
+                    // The legacy xmlapi (v1) returns it. v1 also returns
+                    // expansions/accessories mixed in (no type filter), but
+                    // the rerank below floats real matches to the top so
+                    // the extra noise sinks.
+                    const bggRes = await fetch(`https://boardgamegeek.com/xmlapi/search?search=${encodeURIComponent(q)}`, {
                         headers: {
                             Authorization: `Bearer ${process.env.BOARD_GAME_GEEK_API_TOKEN}`
                         }
@@ -479,21 +486,36 @@ router
                     const xml = await bggRes.text();
                     const parsed = JSON.parse(convert.xml2json(xml, { compact: true, spaces: 4 }));
 
-                    const rawItems = parsed.items && parsed.items.item ? parsed.items.item : [];
+                    const rawItems = parsed.boardgames && parsed.boardgames.boardgame ? parsed.boardgames.boardgame : [];
                     const itemArray = Array.isArray(rawItems) ? rawItems : [rawItems];
                     const ids = itemArray
-                        .map(item => item._attributes && item._attributes.id)
+                        .map(item => item._attributes && item._attributes.objectid)
                         .filter(Boolean);
                     const imageMap = await fetchBoardImages(ids);
 
+                    // v1 schema differs from v2: <boardgame objectid="...">,
+                    // <name primary="true">Title</name>, <yearpublished>YYYY
+                    // </yearpublished>. An item can have multiple <name>
+                    // tags when the search matched both a primary and an
+                    // alternate; xml-js gives back an array in that case —
+                    // prefer the primary so we don't mislabel a game by its
+                    // foreign-language alt title.
+                    const pickTitle = (nameNode) => {
+                        if (!nameNode) return null;
+                        if (Array.isArray(nameNode)) {
+                            const primary = nameNode.find(n => n._attributes && n._attributes.primary === 'true');
+                            return (primary || nameNode[0])._text || null;
+                        }
+                        return nameNode._text || null;
+                    };
                     const results = itemArray.map(item => {
-                        const id = item._attributes && item._attributes.id;
+                        const id = item._attributes && item._attributes.objectid;
                         return {
                             id,
-                            title: item.name && item.name._attributes && item.name._attributes.value,
+                            title: pickTitle(item.name),
                             poster: imageMap.get(String(id)) || null,
                             rating: null,
-                            releaseDate: item.yearpublished && item.yearpublished._attributes && item.yearpublished._attributes.value || null
+                            releaseDate: item.yearpublished && item.yearpublished._text || null
                         };
                     });
 
