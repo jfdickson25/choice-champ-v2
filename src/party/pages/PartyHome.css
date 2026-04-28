@@ -19,13 +19,6 @@
     gap: 12px;
 }
 
-.party-home-top-row {
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    width: 100%;
-}
-
 .party-home-title {
     margin: 0;
     padding: 0 8px;
