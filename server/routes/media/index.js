@@ -126,6 +126,78 @@ function bookToResult(item) {
     };
 }
 
+// NYT Books API → Google Books bridge.
+//
+// NYT exposes weekly bestseller lists with rich metadata (title, author,
+// description, ISBN, cover image) but its book IDs aren't usable
+// elsewhere in our pipeline. To keep tap-into-detail / add-to-collection
+// flowing through the existing Google Books volume id, we look up each
+// NYT book by ISBN-13 and replace the id while keeping the NYT cover
+// (it's reliably high-quality and matches the canonical edition).
+//
+// Books that don't resolve to a Google volume are skipped — usually
+// 0–2 of 15. The list updates weekly; we don't cache here yet, but
+// each user hitting this triggers ~16 outbound calls (1 NYT + ~15
+// Google), well within free-tier quotas.
+async function fetchNytBestsellers(listName) {
+    const apiKey = process.env.NYT_API_KEY;
+    if (!apiKey) throw new Error('NYT_API_KEY not configured');
+    const r = await fetch(`https://api.nytimes.com/svc/books/v3/lists/current/${listName}.json?api-key=${apiKey}`);
+    if (!r.ok) throw new Error(`NYT ${r.status}`);
+    const data = await r.json();
+    const books = (data && data.results && data.results.books) || [];
+
+    const enriched = await Promise.all(books.map(async (b) => {
+        const isbn = b.primary_isbn13;
+        if (!isbn) return null;
+        try {
+            const gbRes = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}&maxResults=1${googleBooksKey()}`);
+            if (!gbRes.ok) return null;
+            const gbData = await gbRes.json();
+            const item = (gbData.items || [])[0];
+            if (!item) return null;
+            const v = item.volumeInfo || {};
+            return {
+                id: item.id,
+                title: b.title || v.title || '',
+                poster: b.book_image || pickBookCover(v),
+                rating: v.averageRating != null ? Number(v.averageRating).toFixed(1) : null,
+                releaseDate: v.publishedDate || null
+            };
+        } catch (_) {
+            return null;
+        }
+    }));
+    return enriched.filter(Boolean);
+}
+
+// Fetch multiple Google Books subject queries in parallel and round-robin
+// interleave the results, so a tab like "Sci-Fi & Fantasy" pulls
+// representatives from both subjects rather than only one. Dedupes by
+// volume id since some books are tagged across both.
+async function fetchMultiSubjectBooks(subjects, page, pageSize) {
+    const startIndex = (page - 1) * pageSize;
+    const responses = await Promise.all(subjects.map(async (s) => {
+        const url = `https://www.googleapis.com/books/v1/volumes?q=subject:${encodeURIComponent(`"${s}"`)}&maxResults=${pageSize}&startIndex=${startIndex}&printType=books&langRestrict=en${googleBooksKey()}`;
+        const r = await fetch(url);
+        if (!r.ok) return [];
+        const data = await r.json();
+        return data.items || [];
+    }));
+    const merged = [];
+    const seen = new Set();
+    const maxLen = Math.max(0, ...responses.map(r => r.length));
+    for (let i = 0; i < maxLen; i++) {
+        for (const r of responses) {
+            if (i < r.length && !seen.has(r[i].id)) {
+                merged.push(r[i]);
+                seen.add(r[i].id);
+            }
+        }
+    }
+    return merged.slice(0, pageSize);
+}
+
 router
     .get('/getInfo/:type/:id', async (req, res, next) => {
         const id = req.params.id;
@@ -695,32 +767,39 @@ router
                     });
                 }
 
-                // Discover feeds.
-                //
-                // Google Books has two quirks here:
-                //   1. `subject:foo OR subject:bar` parses as zero hits,
-                //      so we can't OR subject filters.
-                //   2. `orderBy=newest` is unreliable on broad queries —
-                //      it surfaces classic titles, not 2025/2026 releases.
-                //
-                // Workaround: for new_releases, query `publishedDate:<year>`
-                // which actually filters by published date, and let
-                // relevance pick the popular ones. The current year is
-                // computed server-side so the feed drifts forward
-                // automatically as time passes (no annual code change).
-                // fiction / nonfiction stay simple subject queries.
+                // Bestsellers — NYT weekly list bridged to Google Books.
+                if(feed === 'bestsellers') {
+                    const results = await fetchNytBestsellers('combined-print-and-e-book-fiction');
+                    return res.send({ results, page: 1, totalPages: 1 });
+                }
+
+                // Sci-Fi & Fantasy — round-robin merge of two Google
+                // subject queries since `subject:a OR subject:b` returns
+                // zero hits on Google's parser.
+                if(feed === 'scifi_fantasy') {
+                    const items = await fetchMultiSubjectBooks(['science fiction', 'fantasy'], page, pageSize);
+                    const results = items.map(bookToResult);
+                    return res.send({ results, page, totalPages: 1 });
+                }
+
+                // Single-subject genre tabs + new_releases. new_releases
+                // uses publishedDate:<year> rather than orderBy=newest
+                // (which Google ignores for subject queries — surfaces
+                // 1800s reprints instead of recent titles). Genre tabs
+                // are simple subject queries with a quoted phrase so
+                // multi-word subjects ("science fiction") parse cleanly.
                 const currentYear = new Date().getFullYear();
                 const feedQueries = {
-                    new_releases: { q: `publishedDate:${currentYear}`, orderBy: 'relevance' },
-                    fiction:      { q: 'subject:fiction',              orderBy: 'relevance' },
-                    nonfiction:   { q: 'subject:nonfiction',           orderBy: 'relevance' }
+                    new_releases: { q: `publishedDate:${currentYear}` },
+                    mystery:      { q: 'subject:"mystery"' },
+                    romance:      { q: 'subject:"romance"' },
                 };
                 const cfg = feedQueries[feed];
                 if(!cfg) {
-                    return res.status(400).send({ errMsg: `Invalid feed '${feed}' for type 'book'. Supported: search, new_releases, fiction, nonfiction.` });
+                    return res.status(400).send({ errMsg: `Invalid feed '${feed}' for type 'book'. Supported: search, bestsellers, new_releases, mystery, romance, scifi_fantasy.` });
                 }
 
-                const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(cfg.q)}&orderBy=${cfg.orderBy}&maxResults=${pageSize}&startIndex=${startIndex}&printType=books&langRestrict=en${googleBooksKey()}`;
+                const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(cfg.q)}&orderBy=relevance&maxResults=${pageSize}&startIndex=${startIndex}&printType=books&langRestrict=en${googleBooksKey()}`;
                 const r = await fetch(url);
                 if(!r.ok) {
                     return res.status(502).send({ errMsg: `Google Books discover ${r.status}` });

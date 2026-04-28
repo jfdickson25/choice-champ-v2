@@ -23,9 +23,11 @@ export const SUBTABS = {
         { key: 'hot', label: 'Hot' },
     ],
     book: [
-        { key: 'new_releases', label: 'New Releases' },
-        { key: 'fiction',      label: 'Fiction' },
-        { key: 'nonfiction',   label: 'Nonfiction' },
+        { key: 'bestsellers',   label: 'Bestsellers' },
+        { key: 'new_releases',  label: 'New Releases' },
+        { key: 'mystery',       label: 'Mystery' },
+        { key: 'romance',       label: 'Romance' },
+        { key: 'scifi_fantasy', label: 'Sci-Fi & Fantasy' },
     ],
 };
 
