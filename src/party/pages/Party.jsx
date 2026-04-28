@@ -559,7 +559,12 @@ const isOwnerVoting = userType === 'owner' && collectionItems.length > 1 && !fin
                 width={window.innerWidth}
                 height={window.innerHeight}
                 numberOfPieces={200}
-                style={{ zIndex: 1000, pointerEvents: 'none' }}
+                // Pin to the viewport (not the document) so the canvas
+                // never extends below the visible screen, and put it
+                // BEHIND the winner content via zIndex 0 — DOM order
+                // then naturally paints siblings on top without each
+                // one needing its own z-index lift.
+                style={{ position: 'fixed', top: 0, left: 0, zIndex: 0, pointerEvents: 'none' }}
             />
         )}
 
