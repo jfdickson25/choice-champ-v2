@@ -749,7 +749,7 @@ const isOwnerVoting = userType === 'owner' && collectionItems.length > 1 && !fin
                             <h1 className='ready-text'>Ready!</h1>
                             <p className='waiting-text'>Waiting on other party members...</p>
                             <p className='waiting-text-cancel'>Click to return to voting</p>
-                            <Loading color='#FCB016' type='sync' className='ready-loading' size={20} speed={.5} />
+                            <Loading color='#FCB016' type='beat' className='ready-loading' size={20} speed={.5} />
                             </React.Fragment>
                     }
                 </div> 

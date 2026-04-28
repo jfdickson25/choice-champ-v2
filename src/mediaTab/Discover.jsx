@@ -5,6 +5,7 @@ import { Columns2, Columns3, Columns4, Search as SearchIcon, SlidersHorizontal, 
 import { SUBTABS, fetchDiscover, fetchSearch, fetchGamePosters } from './discoverApi';
 import SortFilterPanel from '../shared/components/SortFilterPanel/SortFilterPanel';
 import { AuthContext } from '../shared/context/auth-context';
+import Loading from '../shared/components/Loading';
 import './Discover.css';
 
 const SUPPORTED_TYPES = ['movie', 'tv', 'game', 'board'];
@@ -339,7 +340,7 @@ const DiscoverFeed = ({ collectionType, color, onSearchingChange }) => {
 
 const DiscoverSkeleton = ({ color }) => (
     <div className='discover-skeleton'>
-        <div className='discover-spinner' style={{ borderTopColor: color }} />
+        <Loading color={color} type='beat' size={20} />
     </div>
 );
 

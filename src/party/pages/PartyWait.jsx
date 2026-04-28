@@ -149,7 +149,7 @@ const PartyWait = () => {
             )}
 
             <div className='party-wait-status'>
-                <Loading color={accentColor} type='propagate' size={12} speed={0.25} />
+                <Loading color={accentColor} type='beat' size={14} speed={0.5} />
                 <span className='party-wait-status-text'>
                     {userType === 'owner' ? 'Ready when you are' : 'Waiting for the host to start…'}
                 </span>
