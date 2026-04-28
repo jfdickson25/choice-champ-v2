@@ -186,8 +186,13 @@
     grid-template-columns: repeat(3, 1fr);
     align-items: center;
     justify-items: center;
+    /* Positioned with a small z-index so the winner card sits above
+       the confetti canvas (zIndex 0) but below the sticky header
+       (zIndex 10) — the X button must always be clickable. The z-index
+       used to be 100 to escape the old zIndex:1000 confetti; that's no
+       longer needed. */
     position: relative;
-    z-index: 100;
+    z-index: 1;
 }
 
 .winner-img {
