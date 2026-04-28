@@ -19,17 +19,19 @@ const itemToLegacy = (row) => ({
 
 // Coerce whatever a source API gave us into a Postgres DATE string
 // ('YYYY-MM-DD'). Movies/TV/games already arrive in that shape from
-// TMDB / RAWG. Board games arrive as a year integer/string from BGG —
-// pad to Jan 1 of that year so all four media types sort by the same
-// column, with the understanding that board precision is year-only.
+// TMDB / RAWG. Board games arrive as a year integer/string from BGG;
+// books arrive from Google Books as either 'YYYY-MM-DD' OR 'YYYY' OR
+// 'YYYY-MM' depending on the volume — pad whichever-shape we get to
+// Jan 1 of that year so all media types sort by the same column.
 const normalizeReleaseDate = (raw, mediaType) => {
     if (raw == null || raw === '') return null;
     const s = String(raw).trim();
-    if (mediaType === 'board') {
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+    if (mediaType === 'board' || mediaType === 'book') {
         const m = s.match(/^(\d{4})/);
         return m ? `${m[1]}-01-01` : null;
     }
-    return /^\d{4}-\d{2}-\d{2}/.test(s) ? s.slice(0, 10) : null;
+    return null;
 };
 
 // Map a collections DB row (with nested items) to the legacy shape.

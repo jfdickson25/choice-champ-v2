@@ -70,6 +70,62 @@ function getSgdbPosterWithTimeout(rawgId, title) {
     ]);
 }
 
+// =====================================================================
+// Books — Google Books volume API + Open Library covers fallback.
+// =====================================================================
+
+// Append "&key=..." when BOOKS_API_KEY is set, else "" so URLs stay
+// well-formed for unauthenticated calls (Google Books has a smaller
+// quota for unkeyed requests but still works for development).
+function googleBooksKey() {
+    return process.env.BOOKS_API_KEY ? `&key=${process.env.BOOKS_API_KEY}` : '';
+}
+
+// Google Books returns small thumbnails with an `&edge=curl` page-curl
+// effect that looks dated in our poster grid. Strip the curl, force
+// https, and bump zoom so the image is large enough to render clearly.
+// Falls back to Open Library (free, no key) when Google has no
+// imageLinks at all but we have an ISBN-13.
+function pickBookCover(volumeInfo) {
+    const links = volumeInfo && volumeInfo.imageLinks;
+    if(links) {
+        const url = links.thumbnail || links.smallThumbnail;
+        if(url) {
+            return url
+                .replace(/^http:\/\//, 'https://')
+                .replace(/&edge=curl/, '')
+                .replace(/zoom=\d/, 'zoom=2');
+        }
+    }
+    const ids = (volumeInfo && volumeInfo.industryIdentifiers) || [];
+    const isbn13 = ids.find(i => i.type === 'ISBN_13');
+    const isbn10 = ids.find(i => i.type === 'ISBN_10');
+    const isbn = (isbn13 || isbn10);
+    if(isbn) return `https://covers.openlibrary.org/b/isbn/${isbn.identifier}-L.jpg`;
+    return null;
+}
+
+// Detect a 10/13-digit numeric ISBN with optional dashes/spaces and
+// return the bare digits — lets the user paste an ISBN into the search
+// bar and get a direct lookup instead of a fuzzy text search.
+function asIsbn(query) {
+    const stripped = String(query || '').replace(/[\s-]/g, '');
+    return /^\d{10}$|^\d{13}$/.test(stripped) ? stripped : null;
+}
+
+// Map a Google Books volume to the search/discover result shape every
+// other media type returns ({ id, title, poster, rating, releaseDate }).
+function bookToResult(item) {
+    const v = item.volumeInfo || {};
+    return {
+        id: item.id,
+        title: v.title || '',
+        poster: pickBookCover(v),
+        rating: v.averageRating != null ? Number(v.averageRating).toFixed(1) : null,
+        releaseDate: v.publishedDate || null
+    };
+}
+
 router
     .get('/getInfo/:type/:id', async (req, res, next) => {
         const id = req.params.id;
@@ -205,6 +261,31 @@ router
 
             res.send({media: {
                 details: boardGame
+            }});
+        } else if(type === 'book') {
+            const r = await fetch(`https://www.googleapis.com/books/v1/volumes/${id}?country=US${googleBooksKey()}`);
+            if(!r.ok) {
+                return res.status(502).send({ errMsg: `Google Books getInfo ${r.status}` });
+            }
+            const data = await r.json();
+            const v = data.volumeInfo || {};
+
+            // pageCount goes into `runtime` so collection_items' single
+            // numeric "runtime" column carries it without a schema
+            // change. ItemDetails labels it "Pages" for books.
+            res.send({ media: {
+                details: {
+                    title: v.title,
+                    subtitle: v.subtitle || null,
+                    authors: Array.isArray(v.authors) ? v.authors : [],
+                    overview: v.description || '',
+                    poster: pickBookCover(v),
+                    releaseDate: v.publishedDate || null,
+                    runtime: v.pageCount || null,
+                    pageCount: v.pageCount || null,
+                    categories: Array.isArray(v.categories) ? v.categories : [],
+                    rating: v.averageRating != null ? Number(v.averageRating).toFixed(1) : null
+                }
             }});
         }
         } catch(err) {
@@ -587,8 +668,64 @@ router
                     page: 1,
                     totalPages: 1
                 });
+            } else if(type === 'book') {
+                const pageSize = 20;
+                const startIndex = (page - 1) * pageSize;
+
+                if(feed === 'search') {
+                    const q = req.query.q || '';
+                    if(!q.trim()) {
+                        return res.send({ results: [], page: 1, totalPages: 1 });
+                    }
+                    // ISBN affordance: 10/13-digit numeric query → direct
+                    // ISBN lookup, otherwise fall through to free-text.
+                    const isbn = asIsbn(q);
+                    const queryString = isbn ? `isbn:${isbn}` : q;
+                    const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(queryString)}&maxResults=${pageSize}&startIndex=${startIndex}&printType=books${googleBooksKey()}`;
+                    const r = await fetch(url);
+                    if(!r.ok) {
+                        return res.status(502).send({ errMsg: `Google Books search ${r.status}` });
+                    }
+                    const data = await r.json();
+                    const results = (data.items || []).map(bookToResult);
+                    return res.send({
+                        results,
+                        page,
+                        totalPages: data.totalItems ? Math.ceil(data.totalItems / pageSize) : 1
+                    });
+                }
+
+                // Discover feeds: subject filters + relevance vs newest.
+                // new_releases pulls from a wide subject so the newest
+                // Google's index has surfaces (constraining to fiction
+                // would miss popular non-fiction releases). fiction /
+                // nonfiction stay relevance-sorted so well-known titles
+                // anchor the grid.
+                const feedQueries = {
+                    new_releases: { q: 'subject:fiction OR subject:nonfiction', orderBy: 'newest' },
+                    fiction:      { q: 'subject:fiction',                       orderBy: 'relevance' },
+                    nonfiction:   { q: 'subject:nonfiction',                    orderBy: 'relevance' }
+                };
+                const cfg = feedQueries[feed];
+                if(!cfg) {
+                    return res.status(400).send({ errMsg: `Invalid feed '${feed}' for type 'book'. Supported: search, new_releases, fiction, nonfiction.` });
+                }
+
+                const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(cfg.q)}&orderBy=${cfg.orderBy}&maxResults=${pageSize}&startIndex=${startIndex}&printType=books&langRestrict=en${googleBooksKey()}`;
+                const r = await fetch(url);
+                if(!r.ok) {
+                    return res.status(502).send({ errMsg: `Google Books discover ${r.status}` });
+                }
+                const data = await r.json();
+                const results = (data.items || []).map(bookToResult);
+
+                return res.send({
+                    results,
+                    page,
+                    totalPages: data.totalItems ? Math.ceil(data.totalItems / pageSize) : 1
+                });
             } else {
-                return res.status(400).send({ errMsg: `Invalid type '${type}'. Supported: movie, tv, game, board.` });
+                return res.status(400).send({ errMsg: `Invalid type '${type}'. Supported: movie, tv, game, board, book.` });
             }
         } catch(err) {
             console.log(err);
