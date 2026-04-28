@@ -1,18 +1,12 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Dialog } from '@mui/material';
-import {
-    LogOut,
-    ChevronRight,
-    Clapperboard,
-    Gamepad2,
-    Dices
-} from 'lucide-react';
+import { LogOut, ChevronRight } from 'lucide-react';
 
 import { api } from '../../shared/lib/api';
 import { AuthContext } from '../../shared/context/auth-context';
 import Loading from '../../shared/components/Loading';
-import RetroTv from '../../shared/components/Icons/RetroTv';
+import { MEDIA_TYPES, MEDIA_TYPE_ORDER } from '../../shared/lib/mediaTypes';
 
 import './Profile.css';
 
@@ -39,12 +33,17 @@ const formatMemberFor = (since) => {
     return `Member for ${parts.join(', ')}`;
 };
 
-const MEDIA_STATS = [
-    { key: 'movie', label: 'Movies',       action: 'watched', color: '#FCB016', Icon: Clapperboard },
-    { key: 'tv',    label: 'TV Shows',     action: 'watched', color: '#F04C53', Icon: RetroTv },
-    { key: 'board', label: 'Board Games',  action: 'played',  color: '#45B859', Icon: Dices },
-    { key: 'game',  label: 'Video Games',  action: 'played',  color: '#2482C5', Icon: Gamepad2 },
-];
+// Profile shows the same five types as the bottom nav, sorted in the
+// same display order so the stats grid mirrors what the user sees in
+// the nav. Pulls everything (label, icon, color, verb) from the shared
+// MEDIA_TYPES config — no need for a duplicate map.
+const MEDIA_STATS = MEDIA_TYPE_ORDER.map(key => ({
+    key,
+    label:  MEDIA_TYPES[key].title,
+    action: MEDIA_TYPES[key].action,
+    color:  MEDIA_TYPES[key].color,
+    Icon:   MEDIA_TYPES[key].Icon,
+}));
 
 const pluralize = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 

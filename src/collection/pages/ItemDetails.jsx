@@ -9,15 +9,9 @@ import { AuthContext } from '../../shared/context/auth-context';
 import { BACKEND_URL } from '../../shared/config';
 import { api } from '../../shared/lib/api';
 import { broadcast } from '../../shared/lib/realtime';
+import { getMediaType, watchedLabelFor, unwatchedLabelFor, rateLabelFor } from '../../shared/lib/mediaTypes';
 import RatingDialog from '../components/RatingDialog';
 import './ItemDetails.css';
-
-const TYPE_COLORS = {
-    movie: '#FCB016',
-    tv:    '#F04C53',
-    game:  '#2482C5',
-    board: '#45B859',
-};
 
 // Format a movie runtime in minutes as "Xh Ym" / "Xh" / "Ym".
 // 135 → "2h 15m", 60 → "1h", 45 → "45m".
@@ -45,10 +39,9 @@ const ItemDetails = () => {
     // sidestepping any TMDB poster-path drift between endpoints.
     const passedPoster = searchParams.get('p') || null;
 
-    const color = TYPE_COLORS[collectionType] || '#FCB016';
-    const isPlayed = collectionType === 'game' || collectionType === 'board';
-    const watchedLabel = isPlayed ? 'Played' : 'Watched';
-    const unwatchedLabel = isPlayed ? 'Unplayed' : 'Unwatched';
+    const color = getMediaType(collectionType).color;
+    const watchedLabel = watchedLabelFor(collectionType);
+    const unwatchedLabel = unwatchedLabelFor(collectionType);
 
     const [globallyWatched, setGloballyWatched] = useState(false);
     const [userRating, setUserRating] = useState(null);
@@ -143,7 +136,10 @@ const ItemDetails = () => {
 
     const addToCollection = (addCollectionId, index) => {
         let tempId = itemId;
-        if(collectionType !== 'board' && collectionType !== 'game') {
+        // Movies / TV use numeric TMDB IDs; books / games / board use
+        // alphanumeric provider IDs (Google Books volume / RAWG slug /
+        // BGG id) — only parseInt the integer-id types.
+        if(collectionType === 'movie' || collectionType === 'tv') {
             tempId = parseInt(tempId);
         }
         // Prefer the poster the user actually saw and tapped on (passedPoster)
@@ -278,7 +274,7 @@ const ItemDetails = () => {
         });
     };
 
-    const rateLabel = isPlayed ? 'Rate this game' : (collectionType === 'tv' ? 'Rate this show' : 'Rate this movie');
+    const rateLabel = rateLabelFor(collectionType);
 
     const isLoading = loadingDetails || loadingCollections;
 
@@ -302,6 +298,13 @@ const ItemDetails = () => {
                     : `${details.minPlayers}–${details.maxPlayers}`)
                 : 'N/A',
         });
+    } else if(collectionType === 'book') {
+        infoRows.push({
+            label: details.authors && details.authors.length > 1 ? 'Authors' : 'Author',
+            value: details.authors && details.authors.length > 0 ? details.authors.join(', ') : 'N/A',
+        });
+        infoRows.push({ label: 'Pages', value: details.pageCount ? `${details.pageCount}` : 'N/A' });
+        infoRows.push({ label: 'Rating', value: details.rating != null ? `${details.rating} / 5` : 'N/A' });
     }
 
     return (

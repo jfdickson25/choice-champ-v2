@@ -12,6 +12,7 @@ const TYPE_LABEL = {
     tv:    'TV show',
     game:  'video game',
     board: 'board game',
+    book:  'book or ISBN',
 };
 
 const SEARCH_DEBOUNCE_MS = 500;

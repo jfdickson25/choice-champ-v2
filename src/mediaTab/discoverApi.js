@@ -22,6 +22,11 @@ export const SUBTABS = {
     board: [
         { key: 'hot', label: 'Hot' },
     ],
+    book: [
+        { key: 'new_releases', label: 'New Releases' },
+        { key: 'fiction',      label: 'Fiction' },
+        { key: 'nonfiction',   label: 'Nonfiction' },
+    ],
 };
 
 async function handleDiscoverResponse(res) {

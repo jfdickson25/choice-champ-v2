@@ -2,10 +2,11 @@ import React, { useEffect, useMemo, useState, useContext, useRef } from 'react';
 import { BACKEND_URL } from '../../shared/config';
 import { api } from '../../shared/lib/api';
 import { supabase } from '../../shared/lib/supabase';
+import { getMediaType, watchedLabelFor, unwatchedLabelFor } from '../../shared/lib/mediaTypes';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../../shared/context/auth-context';
 import Loading from '../../shared/components/Loading';
-import { ArrowLeft, Check, MoreVertical, Pencil, Share2, ListOrdered, Trash, ArrowDownAZ, ArrowDownZA, ArrowDownWideNarrow, ArrowUpWideNarrow, Eye, Gamepad2, Dices, SlidersHorizontal, Layers, EyeOff, GripVertical, Search, Users, X, Columns2, Columns3, Columns4, Clapperboard, Star, Calendar, SquarePen, Info, User, Plus } from 'lucide-react';
+import { ArrowLeft, BookOpen, Check, MoreVertical, Pencil, Share2, ListOrdered, Trash, ArrowDownAZ, ArrowDownZA, ArrowDownWideNarrow, ArrowUpWideNarrow, Eye, Gamepad2, Dices, SlidersHorizontal, Layers, EyeOff, GripVertical, Search, Users, X, Columns2, Columns3, Columns4, Clapperboard, Star, Calendar, SquarePen, Info, User, Plus } from 'lucide-react';
 import RetroTv from '../../shared/components/Icons/RetroTv';
 import { Menu, MenuItem, Dialog, Popover } from '@mui/material';
 
@@ -158,9 +159,12 @@ const Collection = ({ socket }) => {
         } catch {}
     };
 
-    const watchedLabel = (collectionType === 'game' || collectionType === 'board') ? 'Played' : 'Watched';
-    const unwatchedLabel = (collectionType === 'game' || collectionType === 'board') ? 'Unplayed' : 'Unwatched';
-    const WatchedIcon = collectionType === 'game' ? Gamepad2 : collectionType === 'board' ? Dices : Eye;
+    const watchedLabel = watchedLabelFor(collectionType);
+    const unwatchedLabel = unwatchedLabelFor(collectionType);
+    const WatchedIcon = collectionType === 'game' ? Gamepad2
+        : collectionType === 'board' ? Dices
+        : collectionType === 'book' ? BookOpen
+        : Eye;
 
     const isFiltering = filterValue !== 'all';
 
@@ -170,7 +174,7 @@ const Collection = ({ socket }) => {
         { value: 'oldest',       label: 'Date Added ↑',     icon: ArrowUpWideNarrow },
         { value: 'release-desc', label: 'Release Date ↓',   icon: Calendar },
         { value: 'release-asc',  label: 'Release Date ↑',   icon: Calendar },
-        { value: 'watched',      label: 'Recently Watched', icon: Eye },
+        { value: 'watched',      label: `Recently ${watchedLabel}`, icon: Eye },
         { value: 'rating-desc',  label: 'Rating ↓',         icon: Star },
         { value: 'rating-asc',   label: 'Rating ↑',         icon: Star },
         { value: 'abc',          label: 'A–Z',              icon: ArrowDownAZ },
@@ -196,16 +200,7 @@ const Collection = ({ socket }) => {
 
     useEffect(() => {
         auth.showFooterHandler(true);
-
-        if(collectionType === 'movie') {
-            setCollectionTypeColor('#FCB016');
-        } else if (collectionType === 'tv') {
-            setCollectionTypeColor('#FF4D4D');
-        } else if (collectionType === 'game') {
-            setCollectionTypeColor('#2482C5');
-        } else if (collectionType === 'board') {
-            setCollectionTypeColor('#45B859');
-        }
+        setCollectionTypeColor(getMediaType(collectionType).color);
 
         api(`/collections/items/${collectionId}`)
         .then(data => {
@@ -619,7 +614,7 @@ const Collection = ({ socket }) => {
 
     const emptyMessage = (() => {
         if (query !== '') return 'No items match search';
-        if (filterValue === 'watched') return (collectionType === 'game' || collectionType === 'board') ? 'No played items' : 'No watched items';
+        if (filterValue === 'watched') return `No ${watchedLabel.toLowerCase()} items`;
         if (filterValue === 'unwatched') return 'No items in this collection';
         return 'No items in this collection';
     })();
@@ -628,12 +623,7 @@ const Collection = ({ socket }) => {
     // Only this state shows the "Add X" CTA — when a filter or search is
     // active, "no results" is the right message, not an invitation to add.
     const isTrulyEmpty = items.length === 0 && filterValue === 'all' && !query.trim();
-    const addCtaLabel = (
-        collectionType === 'tv'    ? 'Add TV Shows' :
-        collectionType === 'game'  ? 'Add Video Games' :
-        collectionType === 'board' ? 'Add Board Games' :
-                                     'Add Movies'
-    );
+    const addCtaLabel = `Add ${getMediaType(collectionType).title}`;
 
     // Set of source-API item ids currently in this collection — used by
     // AddItemsSheet to render +/✓ states on each search result without
@@ -696,6 +686,7 @@ const Collection = ({ socket }) => {
                         const TypeIcon = collectionType === 'movie' ? Clapperboard
                             : collectionType === 'tv' ? RetroTv
                             : collectionType === 'game' ? Gamepad2
+                            : collectionType === 'book' ? BookOpen
                             : Dices;
                         const total = items.length;
                         const watchedCount = items.filter(i => i.watched).length;
@@ -783,7 +774,7 @@ const Collection = ({ socket }) => {
                                         key={item._id}
                                         item={item}
                                         color={collectionTypeColor}
-                                        watchedLabel={(collectionType === 'game' || collectionType === 'board') ? 'Played' : 'Watched'}
+                                        watchedLabel={watchedLabel}
                                         onToggleMine={toggleMine}
                                         onToggleGroup={toggleGroup}
                                         onOpenRating={openRating}

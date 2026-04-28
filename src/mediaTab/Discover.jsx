@@ -8,13 +8,14 @@ import { AuthContext } from '../shared/context/auth-context';
 import Loading from '../shared/components/Loading';
 import './Discover.css';
 
-const SUPPORTED_TYPES = ['movie', 'tv', 'game', 'board'];
+const SUPPORTED_TYPES = ['movie', 'tv', 'game', 'board', 'book'];
 
 const SEARCH_PLACEHOLDER = {
     movie: 'Search for a movie',
     tv:    'Search for a TV show',
     game:  'Search for a video game',
     board: 'Search for a board game',
+    book:  'Search for a book or ISBN',
 };
 
 const Discover = ({ collectionType, color, onSearchingChange }) => {
