@@ -32,9 +32,9 @@ const R_HUB       = Math.round(R_OUTER * 0.196); // ~35px
 const HUB_BORDER  = Math.round(R_OUTER * 0.013); // ~2px
 
 const POINTER_ANGLE_DEG = 8;                                      // clockwise tilt
-const POINTER_LENGTH    = R_OUTER + Math.round(R_OUTER * 0.065);  // hub → tip
-const POINTER_TIP_R     = Math.max(3, Math.round(R_OUTER * 0.060)); // rounded tip
-const POINTER_PIVOT_R   = Math.round(R_OUTER * 0.20);
+const POINTER_LENGTH    = R_OUTER - Math.round(R_OUTER * 0.13);   // tip stays inside ring
+const POINTER_TIP_R     = 1;                                      // sharp point
+const POINTER_PIVOT_R   = Math.round(R_OUTER * 0.27);             // wider bulb
 const POINTER_OUTLINE   = Math.max(2, Math.round(R_OUTER * 0.020));
 
 const COLOR = {

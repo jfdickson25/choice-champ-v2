@@ -42,15 +42,14 @@ const R_HUB       = 90;
 const HUB_BORDER  = 6;
 
 // Pointer (white teardrop, slightly tilted clockwise, anchored at
-// the hub). The original logo's pointer was chunky and cartoony —
-// these proportions match its visual weight, with a rounded tip
-// (not a sharp point) and a small lean toward the red slice so the
+// the hub). Stays fully inside the wheel ring — sharp pointed tip,
+// chunky bulb at the pivot, ~8° lean toward the red slice so the
 // wheel reads as "spinning toward a winner" rather than dead-center.
-const POINTER_ANGLE_DEG = 8;                  // clockwise tilt from vertical
-const POINTER_LENGTH    = R_OUTER + 30;       // hub center → tip distance
-const POINTER_TIP_R     = 18;                 // radius of rounded tip
-const POINTER_PIVOT_R   = 60;                 // radius of bulbous base
-const POINTER_OUTLINE   = 7;                  // black outline thickness
+const POINTER_ANGLE_DEG = 8;                       // clockwise tilt
+const POINTER_LENGTH    = R_OUTER - 60;            // tip stays inside the ring
+const POINTER_TIP_R     = 2;                       // ~sharp point
+const POINTER_PIVOT_R   = 80;                      // wider bulbous base
+const POINTER_OUTLINE   = 8;                       // black outline thickness
 
 // 32-bit RGBA hex (Jimp). Match src/shared/lib/mediaTypes.js exactly.
 const COLOR = {
