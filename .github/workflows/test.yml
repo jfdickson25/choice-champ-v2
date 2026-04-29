@@ -10,7 +10,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       # Match the repo's engines field (Node 24.x). The built-in test
       # runner has been stable since Node 20, so this works on any
