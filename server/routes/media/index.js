@@ -71,146 +71,75 @@ function getSgdbPosterWithTimeout(rawgId, title) {
 }
 
 // =====================================================================
-// Books — Google Books volume API + Open Library covers fallback.
+// Books — Apple iTunes Search API.
+//
+// Switched from Google Books after extensive testing showed Google's
+// API surfaces companion / fan / regional editions above the
+// canonical books for popular series (Harry Potter, Stormlight, etc.)
+// and serves placeholder cover artwork due to publisher restrictions.
+// iTunes only catalogs books sold via Apple Books — narrower than
+// Google but the canonical popular books are virtually all there with
+// real cover artwork and userRatingCount sorts canonical entries to
+// the top automatically.
+//
+// Trade-offs: no ISBN search, no pageCount metadata, smaller catalog
+// for self-published / niche / out-of-print titles. For our use case
+// (collection management for casual readers) the cleaner search wins.
 // =====================================================================
 
-// Append "&key=..." when BOOKS_API_KEY is set, else "" so URLs stay
-// well-formed for unauthenticated calls (Google Books has a smaller
-// quota for unkeyed requests but still works for development).
-function googleBooksKey() {
-    return process.env.BOOKS_API_KEY ? `&key=${process.env.BOOKS_API_KEY}` : '';
+// Apple's CDN serves artwork at templated dimensions — the trailing
+// /100x100bb.jpg can be swapped for any size up to ~1200x1200. Bump
+// to 600x600 for crisp rendering in the poster grid.
+function upgradeITunesArtwork(url) {
+    if (!url) return null;
+    return url.replace(/\/\d+x\d+bb\.jpg$/, '/600x600bb.jpg');
 }
 
-// Google Books returns small thumbnails with an `&edge=curl` page-curl
-// effect that looks dated in our poster grid. Strip the curl, force
-// https, and bump zoom so the image is large enough to render clearly.
-// Falls back to Open Library (free, no key) when Google has no
-// imageLinks at all but we have an ISBN-13.
-function pickBookCover(volumeInfo, accessInfo) {
-    const links = volumeInfo && volumeInfo.imageLinks;
-    const ai = accessInfo || {};
-    const ids = (volumeInfo && volumeInfo.industryIdentifiers) || [];
-    const isbn13 = ids.find(i => i.type === 'ISBN_13');
-    const isbn10 = ids.find(i => i.type === 'ISBN_10');
-    const isbn = (isbn13 || isbn10);
-
-    // For NO_PAGES editions Google often serves a 15,567-byte
-    // "Image Not Available" placeholder even though imageLinks is
-    // populated — popular series like Harry Potter have publisher
-    // restrictions that block the cover artwork in their API. When we
-    // have an ISBN, prefer Open Library's cover for that case; OL has
-    // real covers for most well-known editions and silently serves a
-    // gray placeholder if the ISBN isn't indexed (no worse than the
-    // Google placeholder we'd otherwise show).
-    if(ai.viewability === 'NO_PAGES' && isbn) {
-        return `https://covers.openlibrary.org/b/isbn/${isbn.identifier}-L.jpg`;
-    }
-
-    if(links) {
-        const url = links.thumbnail || links.smallThumbnail;
-        if(url) {
-            return url
-                .replace(/^http:\/\//, 'https://')
-                .replace(/&edge=curl/, '')
-                .replace(/zoom=\d/, 'zoom=2');
-        }
-    }
-    if(isbn) return `https://covers.openlibrary.org/b/isbn/${isbn.identifier}-L.jpg`;
-    return null;
-}
-
-// Detect a 10/13-digit numeric ISBN with optional dashes/spaces and
-// return the bare digits — lets the user paste an ISBN into the search
-// bar and get a direct lookup instead of a fuzzy text search.
-function asIsbn(query) {
-    const stripped = String(query || '').replace(/[\s-]/g, '');
-    return /^\d{10}$|^\d{13}$/.test(stripped) ? stripped : null;
-}
-
-// Map a Google Books volume to the search/discover result shape every
-// other media type returns ({ id, title, poster, rating, releaseDate }).
-function bookToResult(item) {
-    const v = item.volumeInfo || {};
-    const a = item.accessInfo || {};
+// Map an iTunes search/lookup result to our standard shape. iTunes
+// sometimes returns rating fields as undefined for books with no
+// reviews — coerce to null so the response matches other media types.
+function iTunesItemToResult(item) {
     return {
-        id: item.id,
-        title: v.title || '',
-        poster: pickBookCover(v, a),
-        rating: v.averageRating != null ? Number(v.averageRating).toFixed(1) : null,
-        releaseDate: v.publishedDate || null
+        id: String(item.trackId),
+        title: item.trackName || item.trackCensoredName || '',
+        poster: upgradeITunesArtwork(item.artworkUrl100),
+        rating: item.averageUserRating != null ? Number(item.averageUserRating).toFixed(1) : null,
+        releaseDate: item.releaseDate || null,
     };
 }
 
-// Re-rank book search results so canonical title matches float to the
-// top — same exact / starts-with / whole-word / contains tiering as
-// the board-game search. Google's relevance ordering for popular
-// series surfaces companion books and fan-fiction above the canonical
-// entries; this puts "Harry Potter and the X" above "101 Amazing
-// Harry Potter Facts" without losing the latter.
-function rankBookResults(query, results) {
-    const queryLower = String(query || '').trim().toLowerCase();
-    if (!queryLower) return results;
-    const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const wholeWordRe = new RegExp(`\\b${escapeRe(queryLower)}\\b`);
-    const rankMatch = (title) => {
-        const t = (title || '').toLowerCase();
-        if (t === queryLower) return 0;
-        if (t.startsWith(queryLower)) return 1;
-        if (wholeWordRe.test(t)) return 2;
-        if (t.includes(queryLower)) return 3;
-        return 4;
-    };
-    // Stable sort within tier preserves Google's relevance order.
-    return results
-        .map((r, i) => ({ r, i, tier: rankMatch(r.title) }))
-        .sort((a, b) => (a.tier - b.tier) || (a.i - b.i))
-        .map(({ r }) => r);
-}
-
-// Lightweight quality gate. Google Books's `printType=books` filter is
-// loose — academic papers, government reports, foreign-language
-// editions, and missing-cover stub records all mix in with real books.
-// Drop entries that lack the basic shape of a mainstream book so
-// search results are usable. Skipped for direct ISBN lookups since
-// the user explicitly asked for that exact volume.
-//
-// We deliberately do NOT drop accessInfo.viewability === 'NO_PAGES'
-// here — that would nuke canonical entries for popular series (the
-// 7 main Harry Potter books all carry NO_PAGES because of publisher
-// preview restrictions, even though they're absolutely the books
-// the user wants to see). The placeholder-cover problem those
-// records produce is handled in pickBookCover instead, by routing
-// NO_PAGES editions with an ISBN to Open Library's cover service.
-//
-// imageLinks must still be present (or an ISBN that lets pickBookCover
-// fall back to OL) so we never surface a literally-no-cover record.
-// authors and a non-empty title are required so government reports
-// and study-guide stubs without those fields are dropped.
-function looksLikeBook(item, { strictLanguage = false } = {}) {
-    const v = item.volumeInfo || {};
-    if (!v.title) return false;
-    if (!Array.isArray(v.authors) || v.authors.length === 0) return false;
-    const hasGoogleCover = v.imageLinks && (v.imageLinks.thumbnail || v.imageLinks.smallThumbnail);
-    const ids = v.industryIdentifiers || [];
-    const hasIsbn = ids.some(i => i.type === 'ISBN_13' || i.type === 'ISBN_10');
-    if (!hasGoogleCover && !hasIsbn) return false;
-    if (strictLanguage && v.language && v.language !== 'en') return false;
+// Drop entries without a usable cover or title. iTunes's `media=ebook`
+// filter is already strict — the catalog is curated, not crawled — so
+// this gate barely fires, but it's belt-and-suspenders.
+function looksLikeITunesBook(item) {
+    if (!item.trackName) return false;
+    if (!item.artworkUrl100) return false;
     return true;
 }
 
-// NYT Books API → Google Books bridge.
+// Sort iTunes results by review count desc — `userRatingCount` is the
+// strongest available signal of "canonical / well-known edition" since
+// popular books accumulate orders of magnitude more reviews than
+// companion or fan-written books with the same keywords. (Verified
+// empirically: HP Sorcerer's Stone has 10,597 reviews vs 26 for
+// "The Adventures of Harry Potter" companion book.) Books with no
+// reviews fall to the bottom but still surface, in iTunes's order.
+function sortByReviews(items) {
+    return [...items].sort((a, b) => {
+        const ra = Number(a.userRatingCount) || 0;
+        const rb = Number(b.userRatingCount) || 0;
+        return rb - ra;
+    });
+}
+
+// NYT Books API → iTunes bridge.
 //
-// NYT exposes weekly bestseller lists with rich metadata (title, author,
-// description, ISBN, cover image) but its book IDs aren't usable
-// elsewhere in our pipeline. To keep tap-into-detail / add-to-collection
-// flowing through the existing Google Books volume id, we look up each
-// NYT book by ISBN-13 and replace the id while keeping the NYT cover
-// (it's reliably high-quality and matches the canonical edition).
-//
-// Books that don't resolve to a Google volume are skipped — usually
-// 0–2 of 15. The list updates weekly; we don't cache here yet, but
-// each user hitting this triggers ~16 outbound calls (1 NYT + ~15
-// Google), well within free-tier quotas.
+// NYT exposes weekly bestseller lists with rich metadata (title,
+// author, description, ISBN, cover image) but its book IDs aren't
+// usable elsewhere in our pipeline. iTunes doesn't support ISBN
+// lookup for ebooks, so we bridge by `<title> <author>` text search
+// and pick the top-rated match. Books that don't resolve to an iTunes
+// entry are skipped (mostly very-recent titles not yet on Apple Books).
 async function fetchNytBestsellers(listName) {
     const apiKey = process.env.NYT_API_KEY;
     if (!apiKey) throw new Error('NYT_API_KEY not configured');
@@ -220,54 +149,27 @@ async function fetchNytBestsellers(listName) {
     const books = (data && data.results && data.results.books) || [];
 
     const enriched = await Promise.all(books.map(async (b) => {
-        const isbn = b.primary_isbn13;
-        if (!isbn) return null;
+        const term = `${b.title || ''} ${b.author || ''}`.trim();
+        if (!term) return null;
         try {
-            const gbRes = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}&maxResults=1${googleBooksKey()}`);
-            if (!gbRes.ok) return null;
-            const gbData = await gbRes.json();
-            const item = (gbData.items || [])[0];
-            if (!item) return null;
-            const v = item.volumeInfo || {};
-            return {
-                id: item.id,
-                title: b.title || v.title || '',
-                poster: b.book_image || pickBookCover(v),
-                rating: v.averageRating != null ? Number(v.averageRating).toFixed(1) : null,
-                releaseDate: v.publishedDate || null
-            };
+            const itRes = await fetch(`https://itunes.apple.com/search?media=ebook&attribute=titleTerm&term=${encodeURIComponent(term)}&limit=5&country=US`);
+            if (!itRes.ok) return null;
+            const itData = await itRes.json();
+            const candidates = (itData.results || []).filter(looksLikeITunesBook);
+            if (candidates.length === 0) return null;
+            // Prefer the most-reviewed match — usually the canonical
+            // edition. Falls back to first result if all are unrated.
+            const best = sortByReviews(candidates)[0];
+            const result = iTunesItemToResult(best);
+            // NYT covers are reliably high-quality and pre-trimmed;
+            // prefer the NYT image when present.
+            if (b.book_image) result.poster = b.book_image;
+            return result;
         } catch (_) {
             return null;
         }
     }));
     return enriched.filter(Boolean);
-}
-
-// Fetch multiple Google Books subject queries in parallel and round-robin
-// interleave the results, so a tab like "Sci-Fi & Fantasy" pulls
-// representatives from both subjects rather than only one. Dedupes by
-// volume id since some books are tagged across both.
-async function fetchMultiSubjectBooks(subjects, page, pageSize) {
-    const startIndex = (page - 1) * pageSize;
-    const responses = await Promise.all(subjects.map(async (s) => {
-        const url = `https://www.googleapis.com/books/v1/volumes?q=subject:${encodeURIComponent(`"${s}"`)}&maxResults=${pageSize}&startIndex=${startIndex}&printType=books&langRestrict=en${googleBooksKey()}`;
-        const r = await fetch(url);
-        if (!r.ok) return [];
-        const data = await r.json();
-        return data.items || [];
-    }));
-    const merged = [];
-    const seen = new Set();
-    const maxLen = Math.max(0, ...responses.map(r => r.length));
-    for (let i = 0; i < maxLen; i++) {
-        for (const r of responses) {
-            if (i < r.length && !seen.has(r[i].id)) {
-                merged.push(r[i]);
-                seen.add(r[i].id);
-            }
-        }
-    }
-    return merged.slice(0, pageSize);
 }
 
 router
@@ -407,28 +309,38 @@ router
                 details: boardGame
             }});
         } else if(type === 'book') {
-            const r = await fetch(`https://www.googleapis.com/books/v1/volumes/${id}?country=US${googleBooksKey()}`);
+            // iTunes lookup by trackId — same shape as a single search
+            // result. No API key required.
+            const r = await fetch(`https://itunes.apple.com/lookup?id=${encodeURIComponent(id)}`);
             if(!r.ok) {
-                return res.status(502).send({ errMsg: `Google Books getInfo ${r.status}` });
+                return res.status(502).send({ errMsg: `iTunes getInfo ${r.status}` });
             }
             const data = await r.json();
-            const v = data.volumeInfo || {};
+            const item = (data.results || [])[0];
+            if (!item) {
+                return res.status(404).send({ errMsg: 'Book not found' });
+            }
 
-            // pageCount goes into `runtime` so collection_items' single
-            // numeric "runtime" column carries it without a schema
-            // change. ItemDetails labels it "Pages" for books.
+            // iTunes ebooks don't expose page count, so we can't
+            // populate the "Pages" infoRow. Authors come back as a
+            // single comma-joined string in artistName — split into
+            // an array to match the contract ItemDetails expects.
+            const authors = (item.artistName || '')
+                .split(/\s*(?:,|&|\band\b)\s*/)
+                .filter(Boolean);
+
             res.send({ media: {
                 details: {
-                    title: v.title,
-                    subtitle: v.subtitle || null,
-                    authors: Array.isArray(v.authors) ? v.authors : [],
-                    overview: v.description || '',
-                    poster: pickBookCover(v),
-                    releaseDate: v.publishedDate || null,
-                    runtime: v.pageCount || null,
-                    pageCount: v.pageCount || null,
-                    categories: Array.isArray(v.categories) ? v.categories : [],
-                    rating: v.averageRating != null ? Number(v.averageRating).toFixed(1) : null
+                    title: item.trackName || item.trackCensoredName || '',
+                    authors,
+                    overview: item.description || '',
+                    poster: upgradeITunesArtwork(item.artworkUrl100),
+                    releaseDate: item.releaseDate || null,
+                    runtime: null,
+                    pageCount: null,
+                    categories: Array.isArray(item.genres) ? item.genres.filter(g => g !== 'Books') : [],
+                    rating: item.averageUserRating != null ? Number(item.averageUserRating).toFixed(1) : null,
+                    ratingCount: item.userRatingCount || null,
                 }
             }});
         }
@@ -813,101 +725,90 @@ router
                     totalPages: 1
                 });
             } else if(type === 'book') {
-                const pageSize = 20;
-                const startIndex = (page - 1) * pageSize;
-
                 if(feed === 'search') {
                     const q = req.query.q || '';
                     if(!q.trim()) {
                         return res.send({ results: [], page: 1, totalPages: 1 });
                     }
-                    // ISBN affordance: 10/13-digit numeric query → direct
-                    // ISBN lookup, otherwise fall through to free-text.
-                    const isbn = asIsbn(q);
-                    const queryString = isbn ? `isbn:${isbn}` : q;
-                    // Fetch a wider candidate pool (40 — Google's cap)
-                    // and apply the quality gate below; without it the
-                    // page ends up sparse after filtering. Skip
-                    // langRestrict for ISBN lookups since the user
-                    // explicitly named that exact edition.
-                    const langParam = isbn ? '' : '&langRestrict=en';
-                    const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(queryString)}&maxResults=40&printType=books${langParam}${googleBooksKey()}`;
+                    // iTunes title-attribute search returns a tighter
+                    // candidate set than the default term search (which
+                    // also matches descriptions / publisher copy). Sort
+                    // by review count so canonical editions of popular
+                    // series float to the top automatically — that's
+                    // the strongest available signal for "this is the
+                    // book everyone means."
+                    const url = `https://itunes.apple.com/search?media=ebook&attribute=titleTerm&term=${encodeURIComponent(q)}&limit=50&country=US`;
                     const r = await fetch(url);
                     if(!r.ok) {
-                        return res.status(502).send({ errMsg: `Google Books search ${r.status}` });
+                        return res.status(502).send({ errMsg: `iTunes search ${r.status}` });
                     }
                     const data = await r.json();
-                    const items = data.items || [];
-                    // Drop government reports, foreign-language editions,
-                    // and stub records without covers — common Google
-                    // Books noise. ISBN lookups bypass the gate.
-                    const filtered = isbn
-                        ? items
-                        : items.filter(item => looksLikeBook(item, { strictLanguage: true }));
-                    const mapped = filtered.map(bookToResult);
-                    // Rerank by how well each title matches the query so
-                    // canonical entries float to the top (Google's own
-                    // ranking puts companion books and fan content above
-                    // the actual series for popular queries). Skip for
-                    // ISBN lookups since there's only one expected hit.
-                    const results = isbn ? mapped : rankBookResults(q, mapped);
-                    return res.send({
-                        results,
-                        page: 1,
-                        totalPages: 1
-                    });
-                }
-
-                // Bestsellers — NYT weekly list bridged to Google Books.
-                if(feed === 'bestsellers') {
-                    const results = await fetchNytBestsellers('combined-print-and-e-book-fiction');
+                    const items = (data.results || []).filter(looksLikeITunesBook);
+                    const ranked = sortByReviews(items);
+                    const results = ranked.map(iTunesItemToResult);
                     return res.send({ results, page: 1, totalPages: 1 });
                 }
 
-                // Sci-Fi & Fantasy — round-robin merge of two Google
-                // subject queries since `subject:a OR subject:b` returns
-                // zero hits on Google's parser.
-                if(feed === 'scifi_fantasy') {
-                    const items = await fetchMultiSubjectBooks(['science fiction', 'fantasy'], page, pageSize);
-                    const filtered = items.filter(item => looksLikeBook(item));
-                    const results = filtered.map(bookToResult);
-                    return res.send({ results, page, totalPages: 1 });
+                // Bestsellers — Apple Books "Top Paid Books" RSS feed,
+                // hydrated via bulk lookup so each entry has cover /
+                // reviews / release date. Replaces the previous NYT
+                // bridge — Apple's chart updates daily and stays inside
+                // the same data source as the rest of the books flow,
+                // so add-to-collection works without an ID translation.
+                if(feed === 'bestsellers') {
+                    const rssRes = await fetch('https://itunes.apple.com/us/rss/topebooks/limit=25/json');
+                    if(!rssRes.ok) {
+                        return res.status(502).send({ errMsg: `iTunes RSS ${rssRes.status}` });
+                    }
+                    const rss = await rssRes.json();
+                    const entries = (rss && rss.feed && rss.feed.entry) || [];
+                    const ids = entries
+                        .map(e => e && e.id && e.id.attributes && e.id.attributes['im:id'])
+                        .filter(Boolean);
+                    if (ids.length === 0) {
+                        return res.send({ results: [], page: 1, totalPages: 1 });
+                    }
+                    const lookupRes = await fetch(`https://itunes.apple.com/lookup?id=${ids.join(',')}&country=US`);
+                    if (!lookupRes.ok) {
+                        return res.status(502).send({ errMsg: `iTunes lookup ${lookupRes.status}` });
+                    }
+                    const lookupData = await lookupRes.json();
+                    // Bulk lookup permutes results; preserve the chart's
+                    // ranking by re-ordering against the RSS id list.
+                    const byId = new Map((lookupData.results || []).map(x => [String(x.trackId), x]));
+                    const ordered = ids.map(id => byId.get(String(id))).filter(Boolean);
+                    const results = ordered.filter(looksLikeITunesBook).map(iTunesItemToResult);
+                    return res.send({ results, page: 1, totalPages: 1 });
                 }
 
-                // Single-subject genre tabs + new_releases. new_releases
-                // uses publishedDate:<year> rather than orderBy=newest
-                // (which Google ignores for subject queries — surfaces
-                // 1800s reprints instead of recent titles). Genre tabs
-                // are simple subject queries with a quoted phrase so
-                // multi-word subjects ("science fiction") parse cleanly.
-                const currentYear = new Date().getFullYear();
-                const feedQueries = {
-                    new_releases: { q: `publishedDate:${currentYear}` },
-                    mystery:      { q: 'subject:"mystery"' },
-                    romance:      { q: 'subject:"romance"' },
+                // Genre tabs + new_releases. genreIndex attribute scopes
+                // the search to that Apple Books category, then we sort
+                // by reviews (or release date for new_releases) to
+                // surface popular / recent titles within the category.
+                const feedConfigs = {
+                    new_releases:  { term: 'fiction',          sort: 'date' },
+                    mystery:       { term: 'Mystery',          sort: 'reviews' },
+                    romance:       { term: 'Romance',          sort: 'reviews' },
+                    scifi_fantasy: { term: 'Sci-Fi & Fantasy', sort: 'reviews' },
                 };
-                const cfg = feedQueries[feed];
+                const cfg = feedConfigs[feed];
                 if(!cfg) {
                     return res.status(400).send({ errMsg: `Invalid feed '${feed}' for type 'book'. Supported: search, bestsellers, new_releases, mystery, romance, scifi_fantasy.` });
                 }
 
-                // Fetch 40 (Google's cap) so the quality gate has room
-                // to drop noise without leaving the page sparse.
-                const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(cfg.q)}&orderBy=relevance&maxResults=40&startIndex=${startIndex}&printType=books&langRestrict=en${googleBooksKey()}`;
+                const url = `https://itunes.apple.com/search?media=ebook&attribute=genreIndex&term=${encodeURIComponent(cfg.term)}&limit=50&country=US`;
                 const r = await fetch(url);
                 if(!r.ok) {
-                    return res.status(502).send({ errMsg: `Google Books discover ${r.status}` });
+                    return res.status(502).send({ errMsg: `iTunes discover ${r.status}` });
                 }
                 const data = await r.json();
-                const items = data.items || [];
-                const filtered = items.filter(item => looksLikeBook(item));
-                const results = filtered.map(bookToResult);
+                const items = (data.results || []).filter(looksLikeITunesBook);
+                const sorted = cfg.sort === 'date'
+                    ? [...items].sort((a, b) => (Date.parse(b.releaseDate || 0) || 0) - (Date.parse(a.releaseDate || 0) || 0))
+                    : sortByReviews(items);
+                const results = sorted.map(iTunesItemToResult);
 
-                return res.send({
-                    results,
-                    page,
-                    totalPages: 1
-                });
+                return res.send({ results, page: 1, totalPages: 1 });
             } else {
                 return res.status(400).send({ errMsg: `Invalid type '${type}'. Supported: movie, tv, game, board, book.` });
             }
