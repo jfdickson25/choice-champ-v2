@@ -683,17 +683,16 @@ const Collection = ({ socket }) => {
                 ) : (
                 <div className='collection-sticky-header'>
                     {(() => {
-                        const TypeIcon = collectionType === 'movie' ? Clapperboard
-                            : collectionType === 'tv' ? RetroTv
-                            : collectionType === 'game' ? Gamepad2
-                            : collectionType === 'book' ? BookText
-                            : Dices;
+                        // Pull icon / noun / verb from the shared
+                        // MEDIA_TYPES config so a new type (Books today,
+                        // Podcasts tomorrow) doesn't need its own
+                        // ternary branch added in three places.
+                        const typeConfig = getMediaType(collectionType);
+                        const TypeIcon = typeConfig.Icon;
                         const total = items.length;
                         const watchedCount = items.filter(i => i.watched).length;
-                        const noun = collectionType === 'tv' ? 'show'
-                            : collectionType === 'movie' ? 'movie'
-                            : 'game';
-                        const verb = (collectionType === 'game' || collectionType === 'board') ? 'played' : 'watched';
+                        const noun = typeConfig.noun;
+                        const verb = typeConfig.action;
                         const subtitle = total === 0
                             ? 'Empty collection'
                             : `${total} ${noun}${total === 1 ? '' : 's'}${watchedCount > 0 ? ` · ${watchedCount} ${verb}` : ''}`;
@@ -791,7 +790,7 @@ const Collection = ({ socket }) => {
                             >
                                 <p>
                                     <span className='help-icon'><User size={14} strokeWidth={2} /></span>
-                                    Personal — only you see this. Tracks whether you've {(collectionType === 'game' || collectionType === 'board') ? 'played' : 'watched'} the item across any of your collections.
+                                    Personal — only you see this. Tracks whether you've {getMediaType(collectionType).action} the item across any of your collections.
                                 </p>
                                 <p>
                                     <span className='help-icon'><Users size={14} strokeWidth={2} /></span>
