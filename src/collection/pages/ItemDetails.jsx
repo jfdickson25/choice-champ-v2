@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Check, Info, Plus, Star } from 'lucide-react';
 import { Popover } from '@mui/material';
-import Showdown from 'showdown';
+import { marked } from 'marked';
 
 import Loading from '../../shared/components/Loading';
 import { AuthContext } from '../../shared/context/auth-context';
@@ -84,7 +84,7 @@ const ItemDetails = () => {
             .then(data => {
                 if(cancelled) return;
                 if(collectionType === 'board') {
-                    data.media.details.overview = new Showdown.Converter().makeHtml(data.media.details.overview);
+                    data.media.details.overview = marked.parse(data.media.details.overview);
                 }
                 if(collectionType === 'game') {
                     data.media.details.title = data.media.details.name;

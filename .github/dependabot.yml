@@ -1,0 +1,32 @@
+version: 2
+updates:
+  # Frontend (root) — weekly check, minor batch is fine for a solo
+  # project. Group security-only updates so a quiet week is one PR
+  # instead of N.
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      security-only:
+        applies-to: security-updates
+        patterns: ["*"]
+
+  # Backend (server) — same cadence.
+  - package-ecosystem: "npm"
+    directory: "/server"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      security-only:
+        applies-to: security-updates
+        patterns: ["*"]
+
+  # GitHub Actions versions (e.g. actions/checkout, actions/setup-node).
+  # Slower cadence — these change rarely.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
