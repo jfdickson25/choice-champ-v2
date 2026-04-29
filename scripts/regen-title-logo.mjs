@@ -31,11 +31,11 @@ const DIVIDER_W   = Math.round(R_OUTER * 0.020); // ~4px
 const R_HUB       = Math.round(R_OUTER * 0.196); // ~35px
 const HUB_BORDER  = Math.round(R_OUTER * 0.013); // ~2px
 
-const POINTER_TIP_Y     = cy - R_OUTER - Math.round(R_OUTER * 0.065); // ~12px past rim
-const POINTER_PIVOT_Y   = cy;
-const POINTER_PIVOT_R   = Math.round(R_OUTER * 0.13);  // ~23px
-const POINTER_HALF_WIDE = Math.round(R_OUTER * 0.13);  // ~23px
-const POINTER_OUTLINE   = Math.max(2, Math.round(R_OUTER * 0.015));
+const POINTER_ANGLE_DEG = 8;                                      // clockwise tilt
+const POINTER_LENGTH    = R_OUTER + Math.round(R_OUTER * 0.065);  // hub → tip
+const POINTER_TIP_R     = Math.max(3, Math.round(R_OUTER * 0.060)); // rounded tip
+const POINTER_PIVOT_R   = Math.round(R_OUTER * 0.20);
+const POINTER_OUTLINE   = Math.max(2, Math.round(R_OUTER * 0.020));
 
 const COLOR = {
     tv:    0xF04C53FF,
@@ -97,28 +97,39 @@ img.scan(0, 0, W, H, function (x, y) {
     this.setPixelColor(COLOR[SLICE_ORDER[sliceIdx]], x, y);
 });
 
-// Pointer (black outline + white teardrop on top).
+// Pointer — tapered band between two circles (rounded tip + bulbous
+// pivot), tilted clockwise. Same geometry as scripts/generate-logo.mjs.
+const angleRad = (POINTER_ANGLE_DEG * Math.PI) / 180;
+const AXIS_DX = Math.sin(angleRad);
+const AXIS_DY = -Math.cos(angleRad);
+const tipCx = cx + POINTER_LENGTH * AXIS_DX;
+const tipCy = cy + POINTER_LENGTH * AXIS_DY;
+
 function paintPointer(color, sizeBoost) {
-    const tipY = POINTER_TIP_Y - sizeBoost;
-    const baseY = POINTER_PIVOT_Y;
-    const halfWide = POINTER_HALF_WIDE + sizeBoost;
-    for (let y = tipY; y <= baseY; y++) {
-        const t = (y - tipY) / (baseY - tipY);
-        const halfW = halfWide * t;
-        const xL = Math.round(cx - halfW);
-        const xR = Math.round(cx + halfW);
-        for (let x = xL; x <= xR; x++) {
-            if (x >= 0 && x < W && y >= 0 && y < H) img.setPixelColor(color, x, y);
-        }
-    }
+    const tipR = POINTER_TIP_R + sizeBoost;
     const pivotR = POINTER_PIVOT_R + sizeBoost;
-    for (let y = POINTER_PIVOT_Y - pivotR; y <= POINTER_PIVOT_Y + pivotR; y++) {
-        for (let x = cx - pivotR; x <= cx + pivotR; x++) {
-            const dx = x - cx;
-            const dy = y - POINTER_PIVOT_Y;
-            if (dx * dx + dy * dy <= pivotR * pivotR) {
-                if (x >= 0 && x < W && y >= 0 && y < H) img.setPixelColor(color, x, y);
-            }
+    const slack = pivotR + 2;
+    const minX = Math.floor(Math.min(cx, tipCx) - slack);
+    const maxX = Math.ceil(Math.max(cx, tipCx) + slack);
+    const minY = Math.floor(Math.min(cy, tipCy) - slack);
+    const maxY = Math.ceil(Math.max(cy, tipCy) + slack);
+    for (let y = minY; y <= maxY; y++) {
+        if (y < 0 || y >= H) continue;
+        for (let x = minX; x <= maxX; x++) {
+            if (x < 0 || x >= W) continue;
+            const dx = x - cx, dy = y - cy;
+            const along = dx * AXIS_DX + dy * AXIS_DY;
+            const perpX = dx - along * AXIS_DX;
+            const perpY = dy - along * AXIS_DY;
+            const perpDist = Math.sqrt(perpX * perpX + perpY * perpY);
+            const distToTip = Math.sqrt((x - tipCx) ** 2 + (y - tipCy) ** 2);
+            if (distToTip <= tipR) { img.setPixelColor(color, x, y); continue; }
+            const distToPivot = Math.sqrt(dx * dx + dy * dy);
+            if (distToPivot <= pivotR) { img.setPixelColor(color, x, y); continue; }
+            if (along < 0 || along > POINTER_LENGTH) continue;
+            const t = along / POINTER_LENGTH;
+            const widthHere = pivotR + (tipR - pivotR) * t;
+            if (perpDist <= widthHere) img.setPixelColor(color, x, y);
         }
     }
 }

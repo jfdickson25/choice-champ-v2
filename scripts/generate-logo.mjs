@@ -41,13 +41,15 @@ const DIVIDER_W   = 9;
 const R_HUB       = 90;
 const HUB_BORDER  = 6;
 
-// Pointer (white teardrop pointing up, anchored at the hub).
-// The original logo's pointer was a chunky teardrop, not a needle —
-// these proportions match its visual weight.
-const POINTER_TIP_Y     = cy - R_OUTER - 30;  // tip extends past outer ring
-const POINTER_PIVOT_Y   = cy;                 // round base at center
+// Pointer (white teardrop, slightly tilted clockwise, anchored at
+// the hub). The original logo's pointer was chunky and cartoony —
+// these proportions match its visual weight, with a rounded tip
+// (not a sharp point) and a small lean toward the red slice so the
+// wheel reads as "spinning toward a winner" rather than dead-center.
+const POINTER_ANGLE_DEG = 8;                  // clockwise tilt from vertical
+const POINTER_LENGTH    = R_OUTER + 30;       // hub center → tip distance
+const POINTER_TIP_R     = 18;                 // radius of rounded tip
 const POINTER_PIVOT_R   = 60;                 // radius of bulbous base
-const POINTER_HALF_WIDE = 60;                 // half-width at the widest point
 const POINTER_OUTLINE   = 7;                  // black outline thickness
 
 // 32-bit RGBA hex (Jimp). Match src/shared/lib/mediaTypes.js exactly.
@@ -112,37 +114,50 @@ canvas.scan(0, 0, SIZE, SIZE, function (x, y) {
     this.setPixelColor(COLOR[SLICE_ORDER[sliceIdx]], x, y);
 });
 
-// Pointer — black outline first, white interior on top. The shape is
-// a teardrop drawn as (a) a triangle from the tip down to the hub's
-// horizontal centerline + (b) a circle at the hub centerline that
-// rounds the base into a bulb.
+// Pointer geometry derived from the angle + length params: a tapered
+// band between two circles (small at the tip, large at the pivot).
+// The taper width interpolates linearly along the axis, and the two
+// end circles round off both ends so the silhouette reads as a
+// teardrop rather than a triangle.
+const angleRad = (POINTER_ANGLE_DEG * Math.PI) / 180;
+const POINTER_AXIS_DX = Math.sin(angleRad);   // unit vector along pointer
+const POINTER_AXIS_DY = -Math.cos(angleRad);  // (negative because Y grows downward)
+const tipCx = cx + POINTER_LENGTH * POINTER_AXIS_DX;
+const tipCy = cy + POINTER_LENGTH * POINTER_AXIS_DY;
+
 function paintPointer(color, sizeBoost) {
-    // Triangle tip → base. Linear width: 0 at tip, ±halfWide at pivot.
-    const tipY = POINTER_TIP_Y - sizeBoost;
-    const baseY = POINTER_PIVOT_Y;
-    const halfWide = POINTER_HALF_WIDE + sizeBoost;
-    for (let y = tipY; y <= baseY; y++) {
-        const t = (y - tipY) / (baseY - tipY); // 0 at tip → 1 at base
-        const halfW = halfWide * t;
-        const xL = Math.round(cx - halfW);
-        const xR = Math.round(cx + halfW);
-        for (let x = xL; x <= xR; x++) {
-            if (x >= 0 && x < SIZE && y >= 0 && y < SIZE) {
-                canvas.setPixelColor(color, x, y);
-            }
-        }
-    }
-    // Bulbous bottom — circle centered at the pivot.
+    const tipR = POINTER_TIP_R + sizeBoost;
     const pivotR = POINTER_PIVOT_R + sizeBoost;
-    for (let y = POINTER_PIVOT_Y - pivotR; y <= POINTER_PIVOT_Y + pivotR; y++) {
-        for (let x = cx - pivotR; x <= cx + pivotR; x++) {
-            const dx = x - cx;
-            const dy = y - POINTER_PIVOT_Y;
-            if (dx * dx + dy * dy <= pivotR * pivotR) {
-                if (x >= 0 && x < SIZE && y >= 0 && y < SIZE) {
-                    canvas.setPixelColor(color, x, y);
-                }
-            }
+    // Iterate the bounding box of the pointer (axis-aligned, with slack
+    // for the tilt + outline). For each pixel, project onto the pointer
+    // axis and decide if it's inside the tip circle, base circle, or
+    // tapered band.
+    const slack = pivotR + 2;
+    const minX = Math.floor(Math.min(cx, tipCx) - slack);
+    const maxX = Math.ceil(Math.max(cx, tipCx) + slack);
+    const minY = Math.floor(Math.min(cy, tipCy) - slack);
+    const maxY = Math.ceil(Math.max(cy, tipCy) + slack);
+    for (let y = minY; y <= maxY; y++) {
+        if (y < 0 || y >= SIZE) continue;
+        for (let x = minX; x <= maxX; x++) {
+            if (x < 0 || x >= SIZE) continue;
+            // Project (x, y) onto the axis from pivot (cx,cy) to tip.
+            const dx = x - cx, dy = y - cy;
+            const along = dx * POINTER_AXIS_DX + dy * POINTER_AXIS_DY;     // 0 at pivot, POINTER_LENGTH at tip
+            const perpX = dx - along * POINTER_AXIS_DX;
+            const perpY = dy - along * POINTER_AXIS_DY;
+            const perpDist = Math.sqrt(perpX * perpX + perpY * perpY);
+            // Tip circle (round cap at the top).
+            const distToTip = Math.sqrt((x - tipCx) ** 2 + (y - tipCy) ** 2);
+            if (distToTip <= tipR) { canvas.setPixelColor(color, x, y); continue; }
+            // Pivot circle (round bulb at the base).
+            const distToPivot = Math.sqrt(dx * dx + dy * dy);
+            if (distToPivot <= pivotR) { canvas.setPixelColor(color, x, y); continue; }
+            // Tapered band — only the segment between pivot and tip.
+            if (along < 0 || along > POINTER_LENGTH) continue;
+            const t = along / POINTER_LENGTH;       // 0 at pivot → 1 at tip
+            const widthHere = pivotR + (tipR - pivotR) * t;
+            if (perpDist <= widthHere) canvas.setPixelColor(color, x, y);
         }
     }
 }
