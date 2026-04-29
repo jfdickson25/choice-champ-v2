@@ -34,6 +34,24 @@ const normalizeReleaseDate = (raw, mediaType) => {
     return null;
 };
 
+// Normalize iOS / macOS smart-quote autocorrect back to ASCII so a
+// collection named "Daniel's Favs" stored from an iPhone (which
+// auto-substitutes ' → U+2019) compares equal to "Daniel's Favs"
+// typed elsewhere with a straight apostrophe. Without this, the
+// front-end's duplicate-name guard misses a match and the user
+// can end up with two collections that LOOK identical but have
+// different code-point apostrophes.
+//
+// Covers the four characters iOS substitutes: ' " ' " (left/right
+// single, left/right double). Trims surrounding whitespace too.
+const normalizeCollectionName = (raw) => {
+    if (raw == null) return raw;
+    return String(raw)
+        .replace(/[‘’‚‛]/g, "'")  // single quotes
+        .replace(/[“”„‟]/g, '"')  // double quotes
+        .trim();
+};
+
 // Map a collections DB row (with nested items) to the legacy shape.
 const collectionToLegacy = (c) => ({
     _id: c.id,
@@ -289,9 +307,10 @@ router
     })
     // Rename a collection.
     .post('/name/:id', async (req, res) => {
+        const name = normalizeCollectionName(req.body.name);
         const { error } = await supabase
             .from('collections')
-            .update({ name: req.body.name })
+            .update({ name })
             .eq('id', req.params.id);
         if (error) return res.status(500).json({ errMsg: error.message });
         res.send('Success');
@@ -343,7 +362,8 @@ router
     // Create a new collection.
     .post('/:userId', async (req, res) => {
         const userId = req.user.id;
-        const { name, type } = req.body;
+        const name = normalizeCollectionName(req.body.name);
+        const { type } = req.body;
 
         let shareCode;
         try {
