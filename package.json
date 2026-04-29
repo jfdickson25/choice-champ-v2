@@ -31,7 +31,8 @@
     "server": "npm --prefix server start",
     "dev": "concurrently -n web,api -c cyan,magenta \"npm start\" \"npm run server\"",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --test $(find src -name '*.test.mjs')"
   },
   "browserslist": {
     "production": [

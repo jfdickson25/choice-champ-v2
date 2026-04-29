@@ -10,6 +10,12 @@ import Loading from '../../shared/components/Loading';
 import { AuthContext } from '../../shared/context/auth-context';
 import { X, Dices, Flag, Minus, Plus, Star, SlidersHorizontal, Columns2, Columns3, Columns4 } from 'lucide-react';
 import SortFilterPanel from '../../shared/components/SortFilterPanel/SortFilterPanel';
+import {
+    shapeIncomingItems,
+    filterByVotesAndSuperChoice,
+    computeRunnerUps,
+    isWinnerDeclared,
+} from '../lib/voting.mjs';
 
 import './Party.css';
 import PlaceholderImg from '../../shared/components/PlaceholderImg';
@@ -123,34 +129,13 @@ const Party = () => {
                 setUserType('owner');
             }
 
-            let items = body.party.items.map(item => {
-                return {
-                    id: item._id,
-                    itemId: item.itemId,
-                    title: item.title,
-                    poster: item.poster,
-                    watched: item.watched,
-                    votes: 0,
-                    superChoice: false,
-                    tempSuperChoice: false,
-                    holdSuperChoice: false,
-                    voted: false
-                }
+            // Map raw collection items to the in-memory voting shape
+            // (dedupe by itemId, optionally drop watched). The random
+            // sort stays inline since it's nondeterministic and
+            // intentionally not part of the pure pipeline.
+            let items = shapeIncomingItems(body.party.items, {
+                includeWatched: body.party.includeWatched,
             });
-
-            // Find if there are any duplicate itemIds and remove them
-            items = items.filter((item, index, self) => {
-                return index === self.findIndex((t) => (
-                    t.itemId === item.itemId
-                ));
-            });
-
-            // If body.party.IncludeWatched is false then filter out the items that have been watched
-            if(!body.party.includeWatched) {
-                items = items.filter(item => !item.watched);
-            }
-
-            // Randomize the order of the items
             items = items.sort(() => Math.random() - 0.5);
 
             setMediaType(body.party.mediaType);
@@ -269,7 +254,7 @@ const Party = () => {
             // less votes than the votesNeeded. Reset the votes and voted for all filtered items
             if(usersReadyCountRef.current === totalUsersRef.current) {
                 // Filter out the items that have been voted for
-                const filteredItems = collectionPointRef.current.filter(item => (item.votes >= votesNeededRef.current || item.holdSuperChoice || item.tempSuperChoice));
+                const filteredItems = filterByVotesAndSuperChoice(collectionPointRef.current, votesNeededRef.current);
 
                 if (filteredItems.length === 0) {
                     alert('No item reached the votes needed. Continue voting.');
@@ -278,9 +263,9 @@ const Party = () => {
                     setUsersReadyCount(usersReadyCountRef.current);
                     return;
                 } else {
-                    if (filteredItems.length === 1) {
+                    if (isWinnerDeclared(filteredItems)) {
                         // Set runners up to the remaining items
-                        const runnerUpsTemp = collectionPointRef.current.filter(item => item.votes < votesNeededRef.current);
+                        const runnerUpsTemp = computeRunnerUps(collectionPointRef.current, votesNeededRef.current);
                         setRunnerUps(runnerUpsTemp);
 
                     }
@@ -293,7 +278,7 @@ const Party = () => {
                             if (filteredItems.length === 0) {
                                 setReady(false);
                                 return;
-                            } else if(filteredItems.length === 1) {
+                            } else if(isWinnerDeclared(filteredItems)) {
                                 // Scroll user back to the top of the page
                                 window.scrollTo(0, 0);
 
@@ -424,7 +409,7 @@ const Party = () => {
             // less votes than the votesNeeded. Reset the votes and voted for all filtered items
             if(usersReadyCountRef.current === totalUsersRef.current) {
                 // Filter out the items that have been voted for
-                const filteredItems = collectionItems.filter(item => (item.votes >= votesNeededRef.current) || item.holdSuperChoice || item.tempSuperChoice);
+                const filteredItems = filterByVotesAndSuperChoice(collectionItems, votesNeededRef.current);
 
                 if (filteredItems.length === 0) {
                     alert('No item reached the votes needed. Continue voting.');
@@ -435,9 +420,9 @@ const Party = () => {
                     channelRef.current?.send({ type: 'broadcast', event: 'user-ready', payload: {} });
                     return;
                 } else {
-                    if (filteredItems.length === 1) {
+                    if (isWinnerDeclared(filteredItems)) {
                         // Set runners up to the remaining items
-                        const runnerUpsTemp = collectionItems.filter(item => item.votes < votesNeededRef.current);
+                        const runnerUpsTemp = computeRunnerUps(collectionItems, votesNeededRef.current);
                         setRunnerUps(runnerUpsTemp);
 
                     }
@@ -446,7 +431,7 @@ const Party = () => {
                         // Set slideDown to true to slide down the ready overlay
                         setSlideDown(true);
                         setTimeout(() => {
-                            if(filteredItems.length === 1) {
+                            if(isWinnerDeclared(filteredItems)) {
                                 // Scroll user back to the top of the page
                                 window.scrollTo(0, 0);
 
