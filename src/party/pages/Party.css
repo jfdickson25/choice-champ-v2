@@ -179,6 +179,23 @@
     container-type: inline-size;
 }
 
+/* Press-and-bounce feedback for the vote tap target. Voting is the
+   app's core interaction — combined with the haptic from the JS
+   handler, the punchy squeeze + slight overshoot release makes it
+   feel physical. Release uses a back-out cubic-bezier (overshoots
+   past 1.0 then settles) to give a subtle bounce without a separate
+   keyframe animation. -webkit-tap-highlight-color suppresses iOS's
+   default blue tap flash so our scale animation reads cleanly. */
+.party-item-section.clickable {
+    transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    -webkit-tap-highlight-color: transparent;
+    cursor: pointer;
+}
+.party-item-section.clickable:active {
+    transform: scale(0.9);
+    transition: transform 60ms ease-out;
+}
+
 .winner {
     width: 100%;
     grid-column: 1/3;

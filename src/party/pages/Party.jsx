@@ -16,6 +16,7 @@ import {
     computeRunnerUps,
     isWinnerDeclared,
 } from '../lib/voting.mjs';
+import { vibrate } from '../../shared/lib/haptics';
 
 import './Party.css';
 import PlaceholderImg from '../../shared/components/PlaceholderImg';
@@ -735,7 +736,17 @@ const isOwnerVoting = userType === 'owner' && collectionItems.length > 1 && !fin
                         </div>
                     </div>
                 ) : [...collectionItems].reverse().map(item => (
-                    <div className='party-item-section clickable' key={item.id} onClick={() => { if(!finished) { changeCount(item.id) }}}>
+                    <div className='party-item-section clickable' key={item.id} onClick={() => {
+                        if(finished) return;
+                        // Voting is the app's core interaction — fire a
+                        // short haptic on every tap so the action feels
+                        // physical. Pairs with the CSS press-and-bounce
+                        // animation in Party.css so devices without
+                        // Vibration API support still get tactile-ish
+                        // feedback.
+                        vibrate(8);
+                        changeCount(item.id);
+                    }}>
                         <PlaceholderImg
                             classNames='party-item-img'
                             src={item.poster}
