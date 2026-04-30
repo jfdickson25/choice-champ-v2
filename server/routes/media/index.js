@@ -49,9 +49,11 @@ const EXPLICIT_GAME_TAG_SLUGS = new Set([
     'hentai',
     'nsfw',
     'erotic',
+    'adult',
 ]);
 function looksLikeRawgGame(item) {
     if (item?.esrb_rating?.slug === 'adults-only') return false;
+    if (hasExplicitTitleWord(item?.name)) return false;
     if (Array.isArray(item?.tags)) {
         for (const t of item.tags) {
             if (t && EXPLICIT_GAME_TAG_SLUGS.has(t.slug)) return false;
@@ -280,6 +282,22 @@ function isSummaryPublisher(artistName) {
     return SUMMARY_PUBLISHERS.has((artistName || '').trim().toLowerCase());
 }
 
+// Shared title-keyword blocklist applied across Books, Movies, TV,
+// and Games. Words that essentially never appear in mainstream titles
+// — whole-word match keeps "Sex and the City" / "Sex Education" /
+// "The Sexy Brutale" / "Adult Material" / "Young Adult" all safe
+// since those titles don't contain any blocked term. Words like
+// `erotic` and `erotica` catch the bulk of TMDB's softcore catalog
+// ("Erotic Ghost Story", "The Erotic Diary of Misty Mundae"),
+// `hentai` / `nsfw` / `xxx` / `porn` catch unambiguous explicit
+// content across all sources, and `futanari` / `futa` / `eroge` /
+// `smut` / `threesome` / `menage` / `milf` / `dilf` catch the
+// genre-specific stuff that publishers use to self-describe.
+const EXPLICIT_TITLE_WORDS_RE = /\b(?:erotica|erotic|xxx|hentai|nsfw|porn|pornographic|threesome|menage|ménage|futanari|futa|milf|dilf|smut|smutty|eroge)\b/i;
+function hasExplicitTitleWord(title) {
+    return EXPLICIT_TITLE_WORDS_RE.test(String(title || ''));
+}
+
 // iTunes ebook genres that mark the entry as adult/explicit content.
 // The URL `explicit=No` parameter does NOT filter these out for books
 // (verified live — it only affects music), so we have to do it post-
@@ -300,6 +318,7 @@ function looksLikeITunesBook(item) {
     if (hasNonLatinScript(item.trackName, item.artistName)) return false;
     if (isSummaryPublisher(item.artistName)) return false;
     if (isExplicitBook(item)) return false;
+    if (hasExplicitTitleWord(item.trackName)) return false;
     if (looksNonEnglish(item.trackName, item.description)) return false;
     return true;
 }
@@ -592,13 +611,20 @@ router
                     const tmdbRes = await fetch(`https://api.themoviedb.org/3/search/${type}?api_key=${process.env.MOVIE_DB_API_KEY}&query=${encodeURIComponent(q)}&include_adult=false&page=${page}`);
                     const data = await tmdbRes.json();
 
-                    const results = (data.results || []).map(item => ({
-                        id: item.id,
-                        title: type === 'movie' ? item.title : item.name,
-                        poster: item.poster_path ? `https://image.tmdb.org/t/p/w342${item.poster_path}` : null,
-                        rating: item.vote_average,
-                        releaseDate: type === 'movie' ? item.release_date : item.first_air_date
-                    }));
+                    // TMDB's `include_adult=false` only filters its
+                    // dedicated adult flag (porn). Plenty of softcore /
+                    // explicit-titled stuff sits below that flag, so
+                    // we apply the same title-keyword block list used
+                    // by Books and Games as a second layer.
+                    const results = (data.results || [])
+                        .filter(item => !hasExplicitTitleWord(type === 'movie' ? item.title : item.name))
+                        .map(item => ({
+                            id: item.id,
+                            title: type === 'movie' ? item.title : item.name,
+                            poster: item.poster_path ? `https://image.tmdb.org/t/p/w342${item.poster_path}` : null,
+                            rating: item.vote_average,
+                            releaseDate: type === 'movie' ? item.release_date : item.first_air_date
+                        }));
 
                     return res.send({
                         results,
@@ -615,13 +641,15 @@ router
                 const tmdbRes = await fetch(`https://api.themoviedb.org/3${path}?api_key=${process.env.MOVIE_DB_API_KEY}&language=en-US&include_adult=false&page=${page}`);
                 const data = await tmdbRes.json();
 
-                const results = (data.results || []).map(item => ({
-                    id: item.id,
-                    title: type === 'movie' ? item.title : item.name,
-                    poster: item.poster_path ? `https://image.tmdb.org/t/p/w342${item.poster_path}` : null,
-                    rating: item.vote_average,
-                    releaseDate: type === 'movie' ? item.release_date : item.first_air_date
-                }));
+                const results = (data.results || [])
+                    .filter(item => !hasExplicitTitleWord(type === 'movie' ? item.title : item.name))
+                    .map(item => ({
+                        id: item.id,
+                        title: type === 'movie' ? item.title : item.name,
+                        poster: item.poster_path ? `https://image.tmdb.org/t/p/w342${item.poster_path}` : null,
+                        rating: item.vote_average,
+                        releaseDate: type === 'movie' ? item.release_date : item.first_air_date
+                    }));
 
                 return res.send({
                     results,
@@ -1090,6 +1118,9 @@ router
         if(type === 'movie' || type === 'tv') {
             let response = await fetch(`https://api.themoviedb.org/3/search/${type}?api_key=${process.env.MOVIE_DB_API_KEY}&query=${title}&include_adult=false&page=${page}`);
             responseJson = await response.json();
+            responseJson.results = (responseJson.results || []).filter(
+                item => !hasExplicitTitleWord(type === 'movie' ? item.title : item.name)
+            );
             // Sort results by popularity
             responseJson.results.sort((a, b) => {
                 return b.popularity - a.popularity;
