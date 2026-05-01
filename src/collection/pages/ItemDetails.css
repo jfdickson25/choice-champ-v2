@@ -51,9 +51,10 @@
     height: 40px;
 }
 
-/* Sticky Manage FAB — Apple "Liquid Glass" aesthetic. Very light
-   theme-aware tint, strong backdrop blur, crisp hairline border.
-   Theme-agnostic so the same chrome works across every media type. */
+/* Sticky Manage FAB — Liquid Glass tinted with the active media
+   color. The hex passed via --manage-tint mixes into the bg/border
+   at low alpha so the page reads through, but the pill picks up a
+   subtle media-color identity. */
 .item-details-manage-fab {
     position: fixed;
     bottom: calc(env(safe-area-inset-bottom, 0) + 16px);
@@ -69,8 +70,8 @@
     font-weight: 600;
     letter-spacing: 0.02em;
     cursor: pointer;
-    background-color: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    background-color: color-mix(in srgb, var(--manage-tint, #ffffff) 22%, transparent);
+    border: 1px solid color-mix(in srgb, var(--manage-tint, #ffffff) 45%, transparent);
     backdrop-filter: blur(22px) saturate(180%);
     -webkit-backdrop-filter: blur(22px) saturate(180%);
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.12);
@@ -80,17 +81,17 @@
 }
 
 :root[data-theme="light"] .item-details-manage-fab {
-    background-color: rgba(255, 255, 255, 0.55);
-    border-color: rgba(0, 0, 0, 0.08);
+    background-color: color-mix(in srgb, var(--manage-tint, #ffffff) 32%, rgba(255, 255, 255, 0.4));
+    border-color: color-mix(in srgb, var(--manage-tint, #ffffff) 50%, rgba(0, 0, 0, 0.05));
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
 .item-details-manage-fab:hover {
-    background-color: rgba(255, 255, 255, 0.14);
+    background-color: color-mix(in srgb, var(--manage-tint, #ffffff) 32%, transparent);
 }
 
 :root[data-theme="light"] .item-details-manage-fab:hover {
-    background-color: rgba(255, 255, 255, 0.75);
+    background-color: color-mix(in srgb, var(--manage-tint, #ffffff) 42%, rgba(255, 255, 255, 0.4));
 }
 
 .item-details-manage-fab:active {
