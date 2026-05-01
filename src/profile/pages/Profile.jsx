@@ -16,21 +16,20 @@ const memberSinceFromIso = (iso) => {
     return Number.isNaN(d.getTime()) ? null : d;
 };
 
+// "Member since April 2026" — month-and-year is unambiguous and
+// doesn't need to fight with day-of-month arithmetic. The previous
+// "Member for X years, Y months" formulation broke when the current
+// day-of-month was earlier than the signup day-of-month: it would
+// decrement months back to 0 and fall through to "Member since
+// today" even for accounts weeks old.
+const MEMBER_SINCE_FORMATTER = new Intl.DateTimeFormat(undefined, {
+    month: 'long',
+    year: 'numeric',
+});
+
 const formatMemberFor = (since) => {
     if(!since) return null;
-    const now = new Date();
-    let years = now.getFullYear() - since.getFullYear();
-    let months = now.getMonth() - since.getMonth();
-    if(now.getDate() < since.getDate()) months -= 1;
-    if(months < 0) {
-        years -= 1;
-        months += 12;
-    }
-    if(years <= 0 && months <= 0) return 'Member since today';
-    const parts = [];
-    if(years > 0) parts.push(`${years} year${years === 1 ? '' : 's'}`);
-    if(months > 0) parts.push(`${months} month${months === 1 ? '' : 's'}`);
-    return `Member for ${parts.join(', ')}`;
+    return `Member since ${MEMBER_SINCE_FORMATTER.format(since)}`;
 };
 
 // Profile shows the same five types as the bottom nav, sorted in the
