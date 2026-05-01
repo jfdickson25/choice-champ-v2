@@ -262,6 +262,52 @@ button {
   color: var(--cc-text);
 }
 
+/* Liquid-glass variant. Pages anchor with .icon-btn-floating-anchor on
+   a wrapper (position: fixed, top: safe-area + 12px, full width with
+   space-between) so left/right buttons live in one row that sits over
+   the page hero. Glass styling matches the Manage FAB aesthetic. */
+.icon-btn-floating {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: var(--cc-text);
+  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.icon-btn-floating:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--cc-text);
+}
+
+:root[data-theme="light"] .icon-btn-floating {
+  background: rgba(255, 255, 255, 0.55);
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+:root[data-theme="light"] .icon-btn-floating:hover {
+  background: rgba(255, 255, 255, 0.75);
+}
+
+/* Wrapper that pins the floating buttons to the top of the viewport.
+   Pages opt in instead of using their per-page topbar div. */
+.floating-topbar {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0) + 12px);
+  left: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+  z-index: 1100;
+}
+
+.floating-topbar > * {
+  pointer-events: auto;
+}
+
 .collection-menu-paper {
   background-color: var(--cc-surface-menu) !important;
   border: 1px solid var(--cc-border-soft) !important;

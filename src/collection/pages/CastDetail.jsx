@@ -61,19 +61,19 @@ const CastDetail = () => {
 
     return (
         <div className='content cast-detail-page'>
-            <div className='cast-detail-topbar'>
-                <button className='icon-btn' onClick={() => navigate(-1)} aria-label='Back'>
+            <div className='floating-topbar'>
+                <button className='icon-btn icon-btn-floating' onClick={() => navigate(-1)} aria-label='Back'>
                     <ArrowLeft size={22} strokeWidth={1.75} />
                 </button>
-                {originator && (
+                {originator ? (
                     <button
-                        className='icon-btn cast-detail-close-btn'
+                        className='icon-btn icon-btn-floating'
                         onClick={() => navigate(originator)}
                         aria-label='Close and return to original page'
                     >
                         <X size={22} strokeWidth={1.75} />
                     </button>
-                )}
+                ) : <span />}
             </div>
 
             {loading ? (

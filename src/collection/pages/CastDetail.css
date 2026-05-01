@@ -1,19 +1,8 @@
 .cast-detail-page {
     color: var(--cc-text-soft);
     font-family: inherit;
+    padding-top: calc(env(safe-area-inset-top, 0) + 64px);
     padding-bottom: calc(env(safe-area-inset-bottom, 0) + 40px);
-}
-
-.cast-detail-topbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding-top: 12px;
-    padding-bottom: 4px;
-}
-
-.cast-detail-close-btn {
-    margin-left: auto;
 }
 
 .cast-detail-loading {

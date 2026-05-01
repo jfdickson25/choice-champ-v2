@@ -353,19 +353,19 @@ const ItemDetails = () => {
 
     return (
         <div className='content item-details-page'>
-            <div className='item-details-topbar'>
-                <button className='icon-btn' onClick={() => navigate(-1)} aria-label='Back'>
+            <div className='floating-topbar'>
+                <button className='icon-btn icon-btn-floating' onClick={() => navigate(-1)} aria-label='Back'>
                     <ArrowLeft size={22} strokeWidth={1.75} />
                 </button>
-                {originator && (collectionType === 'movie' || collectionType === 'tv') && (
+                {originator && (collectionType === 'movie' || collectionType === 'tv') ? (
                     <button
-                        className='icon-btn item-details-close-btn'
+                        className='icon-btn icon-btn-floating'
                         onClick={() => navigate(originator)}
                         aria-label='Close and return to original page'
                     >
                         <X size={22} strokeWidth={1.75} />
                     </button>
-                )}
+                ) : <span />}
             </div>
 
             {isLoading ? (

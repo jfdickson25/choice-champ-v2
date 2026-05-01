@@ -1,7 +1,9 @@
 .item-details-page {
     color: var(--cc-text-soft);
     font-family: inherit;
-    /* Reserve room for the sticky Manage FAB anchored at the bottom. */
+    /* Top padding clears the floating topbar (40px icon + 12px above + 12px below + safe area).
+       Bottom padding clears the sticky Manage FAB. */
+    padding-top: calc(env(safe-area-inset-top, 0) + 64px);
     padding-bottom: calc(env(safe-area-inset-bottom, 0) + 92px);
 }
 
@@ -93,18 +95,6 @@
 
 .item-details-manage-body .item-details-section:last-child {
     margin-bottom: 0;
-}
-
-.item-details-topbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding-top: 12px;
-    padding-bottom: 4px;
-}
-
-.item-details-close-btn {
-    margin-left: auto;
 }
 
 .item-details-loading {
