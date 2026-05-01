@@ -62,7 +62,7 @@ const PartyHome = () => {
                         setActiveMediaType={setActiveMediaType}
                         collectionTypeColor={collectionTypeColor}
                     />
-                    : <JoinParty embedded />}
+                    : <JoinParty embedded collectionTypeColor={collectionTypeColor} />}
             </div>
         </div>
     );

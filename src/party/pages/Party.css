@@ -281,7 +281,7 @@
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     padding: 20px 16px 40px 16px;
-    background-color: rgb(39 39 39 / 88%);
+    background-color: var(--cc-runner-up-bg);
     margin-top: 40px;
     border-radius: 20px;
     align-items: center;

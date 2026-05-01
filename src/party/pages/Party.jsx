@@ -774,7 +774,7 @@ const isOwnerVoting = userType === 'owner' && collectionItems.length > 1 && !fin
         </div>
         { 
             (collectionItems.length > 1) && ( 
-                !ready ? ( (!randomSelected && !finishEarly) ? <Button className='finish-voting-btn' onClick={userReady} backgroundColor='#000' color='#fff'>Ready</Button> : null )
+                !ready ? ( (!randomSelected && !finishEarly) ? <Button className='finish-voting-btn' onClick={userReady} backgroundColor={partyColor} color='#111'>Ready</Button> : null )
                 : <div 
                     className='ready-overlay' 
                     onClick={ totalUsers > 1 ? userNotReady : null} 

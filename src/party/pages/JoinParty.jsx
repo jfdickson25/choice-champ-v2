@@ -7,7 +7,7 @@ import { AuthContext } from '../../shared/context/auth-context';
 
 import './JoinParty.css';
 
-const JoinParty = ({ embedded = false }) => {
+const JoinParty = ({ embedded = false, collectionTypeColor = '#FCB016' }) => {
     const auth = useContext(AuthContext);
     const [errorMessage, setErrorMessage] = useState('');
 
@@ -46,7 +46,7 @@ const JoinParty = ({ embedded = false }) => {
 
             <div className='join-party-form'>
                 <input className='text-input' type="text" inputMode="numeric" pattern="[0-9]*" maxLength={4} placeholder="Join Code" ref={inputRef} onChange={changeHandler} />
-                <Button className="join-btn" backgroundColor="#000" color="#fff" onClick={navToPartyWait}>Join Party</Button>
+                <Button className="join-btn" backgroundColor={collectionTypeColor} color="#111" onClick={navToPartyWait}>Join Party</Button>
                 {errorMessage && <p className='join-party-error-msg'>{errorMessage}</p>}
             </div>
         </div>

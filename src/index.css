@@ -73,6 +73,12 @@
      white page. */
   --cc-pill-inverse-bg: #000;
 
+  /* Runner-up card on the post-vote winner page — sits on top of
+     the confetti canvas and needs to read against the page bg in
+     both themes. Dark mode keeps the original near-black @ 88%
+     opacity; light mode flips to opaque white. */
+  --cc-runner-up-bg: rgb(39 39 39 / 88%);
+
   /* Status */
   --cc-error: #e53e3e;
   --cc-error-strong: #c53030;
@@ -149,6 +155,9 @@
      PartyHome Create / Join toggle reads as a subtle light pill with
      dark text instead of a stop-light black pill with white text. */
   --cc-pill-inverse-bg: #e5e5e5;
+
+  /* Runner-up card flips to opaque white on the off-white page. */
+  --cc-runner-up-bg: #ffffff;
 }
 
 * {

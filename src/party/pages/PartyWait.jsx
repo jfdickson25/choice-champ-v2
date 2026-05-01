@@ -141,8 +141,8 @@ const PartyWait = () => {
                 <Button
                     className='party-wait-start-btn'
                     onClick={routeToParty}
-                    backgroundColor='#000'
-                    color='#fff'
+                    backgroundColor={accentColor}
+                    color='#111'
                 >
                     Start Party
                 </Button>
