@@ -313,6 +313,9 @@ const ItemDetails = () => {
     } else if(collectionType === 'tv') {
         if(details.year) infoRows.push({ label: 'Year', value: details.year });
         infoRows.push({ label: 'Seasons', value: details.runtime > 0 ? `${details.runtime} season${details.runtime === 1 ? '' : 's'}` : 'N/A' });
+        if(details.tvEpisodeCount) infoRows.push({ label: 'Episodes', value: `${details.tvEpisodeCount}` });
+        if(details.tvEpisodeRuntime) infoRows.push({ label: 'Episode Length', value: formatRuntime(details.tvEpisodeRuntime) });
+        if(details.tvStatus) infoRows.push({ label: 'Status', value: details.tvStatus });
         if(details.mpaaRating) infoRows.push({ label: 'Rated', value: details.mpaaRating });
     } else if(collectionType === 'game') {
         infoRows.push({ label: 'Avg Playtime', value: details.runtime > 0 ? `${details.runtime} hour${details.runtime === 1 ? '' : 's'}` : 'N/A' });
@@ -370,7 +373,26 @@ const ItemDetails = () => {
                 </div>
             ) : (
                 <React.Fragment>
-                    {(details.poster || passedPoster) && (
+                    {(collectionType === 'movie' || collectionType === 'tv') && details.backdrop ? (
+                        // Cinematic hero — TMDB landscape backdrop with the
+                        // poster card overlapping the bottom edge, JustWatch /
+                        // Letterboxd style. Falls back to the centered poster
+                        // hero below when no backdrop is available.
+                        <div className='item-details-backdrop-hero'>
+                            <div className='item-details-backdrop-wrap'>
+                                <img className='item-details-backdrop' src={details.backdrop} alt='' />
+                                <div className='item-details-backdrop-fade' />
+                            </div>
+                            {(details.poster || passedPoster) && (
+                                <img
+                                    key={details.poster || passedPoster}
+                                    className='item-details-backdrop-poster'
+                                    src={details.poster || passedPoster}
+                                    alt={`${details.title} poster`}
+                                />
+                            )}
+                        </div>
+                    ) : (details.poster || passedPoster) && (
                         <div className='item-details-poster-wrap'>
                             {/* Prefer the fresh /getInfo poster once it loads;
                                 show passedPoster instantly so there's no blank
@@ -386,6 +408,10 @@ const ItemDetails = () => {
                         </div>
                     )}
                     <h1 className='item-details-title' style={{ color }}>{details.title}</h1>
+
+                    {(collectionType === 'movie' || collectionType === 'tv') && details.tagline && (
+                        <p className='item-details-tagline'>"{details.tagline}"</p>
+                    )}
 
                     {(collectionType === 'movie' || collectionType === 'tv') && (
                         (() => {
@@ -408,6 +434,10 @@ const ItemDetails = () => {
 
                     {(collectionType === 'movie' || collectionType === 'tv') && details.ratings && (
                         <RatingsStrip ratings={details.ratings} />
+                    )}
+
+                    {(collectionType === 'movie' || collectionType === 'tv') && details.awards && (
+                        <p className='item-details-awards'>{details.awards}</p>
                     )}
 
                     {(collectionType === 'movie' || collectionType === 'tv') && details.trailer && (

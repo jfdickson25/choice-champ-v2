@@ -530,11 +530,22 @@ router
                 creators = (detailsData.created_by || []).map(c => c.name);
             }
 
+            // TV-specific enrichment from TMDB. episode_run_time is an
+            // array of common runtimes; first entry is the most-common
+            // / canonical episode length for the show.
+            const tvStatus = type === 'tv' ? (detailsData.status || null) : null;
+            const tvEpisodeCount = type === 'tv' ? (detailsData.number_of_episodes || null) : null;
+            const tvEpisodeRuntime = type === 'tv' && Array.isArray(detailsData.episode_run_time) && detailsData.episode_run_time.length > 0
+                ? detailsData.episode_run_time[0]
+                : null;
+
             const response = {
                 details: {
                     title: title,
                     overview: detailsData.overview,
+                    tagline: detailsData.tagline || null,
                     poster: `https://image.tmdb.org/t/p/w500${detailsData.poster_path}`,
+                    backdrop: detailsData.backdrop_path ? `https://image.tmdb.org/t/p/w1280${detailsData.backdrop_path}` : null,
                     releaseDate: releaseDate,
                     year: releaseDate ? releaseDate.slice(0, 4) : null,
                     runtime: runtime,
@@ -544,6 +555,10 @@ router
                     director,
                     creators,
                     trailer: trailer ? { key: trailer.key, name: trailer.name || 'Trailer' } : null,
+                    awards: valueOrNull(omdbData?.Awards),
+                    tvStatus,
+                    tvEpisodeCount,
+                    tvEpisodeRuntime,
                     ratings: {
                         tmdb: detailsData.vote_average != null ? detailsData.vote_average.toFixed(1) : null,
                         imdb: valueOrNull(omdbData?.imdbRating),

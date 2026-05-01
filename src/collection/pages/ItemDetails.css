@@ -22,7 +22,7 @@
     padding: 60px 0;
 }
 
-/* Hero poster */
+/* Hero poster (fallback when no backdrop is available) */
 .item-details-poster-wrap {
     display: flex;
     justify-content: center;
@@ -36,6 +36,57 @@
     border-radius: 14px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
     animation: item-details-poster-in 220ms ease-out;
+}
+
+/* Cinematic backdrop hero (preferred for movie/TV with backdrop). */
+.item-details-backdrop-hero {
+    position: relative;
+    margin: 12px 0 70px 0;
+    animation: item-details-poster-in 220ms ease-out;
+}
+
+.item-details-backdrop-wrap {
+    position: relative;
+    border-radius: 14px;
+    overflow: hidden;
+    background-color: var(--cc-elevation-mid);
+}
+
+.item-details-backdrop {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    display: block;
+}
+
+.item-details-backdrop-fade {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.55) 100%);
+    pointer-events: none;
+}
+
+.item-details-backdrop-poster {
+    position: absolute;
+    bottom: -50px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 110px;
+    aspect-ratio: 2 / 3;
+    object-fit: cover;
+    border-radius: 10px;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.06);
+    z-index: 2;
+}
+
+@media (min-width: 700px) {
+    .item-details-backdrop-poster {
+        width: 140px;
+        bottom: -60px;
+    }
+    .item-details-backdrop-hero {
+        margin-bottom: 80px;
+    }
 }
 
 /* Smooth fade-in when src changes (key bumps remount the img). Used so a
@@ -53,12 +104,29 @@
     line-height: 1.2;
 }
 
+.item-details-tagline {
+    margin: 0 0 8px 0;
+    text-align: center;
+    font-size: 10.5pt;
+    font-style: italic;
+    color: var(--cc-text-soft);
+    line-height: 1.4;
+}
+
 .item-details-credit {
     margin: 0 0 12px 0;
     text-align: center;
     font-size: 10.5pt;
     font-style: italic;
     color: var(--cc-text-muted);
+}
+
+.item-details-awards {
+    margin: -4px 0 14px 0;
+    text-align: center;
+    font-size: 9.5pt;
+    color: var(--cc-text-muted);
+    line-height: 1.4;
 }
 
 .item-details-genres {
