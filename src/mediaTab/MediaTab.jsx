@@ -200,19 +200,7 @@ const MediaTabFull = ({ type, config }) => {
                     </button>
                     <div className='media-tab-title-block'>
                         {config.Icon && <config.Icon size={30} strokeWidth={1.75} color={config.color} />}
-                        <div className='media-tab-title-text'>
-                            <h1 className='media-tab-title' style={{ color: config.color }}>{config.title}</h1>
-                            {(() => {
-                                const count = collections.length;
-                                const totalItems = collections.reduce((s, c) => s + (Array.isArray(c.items) ? c.items.length : 0), 0);
-                                const text = isLoading
-                                    ? ' '
-                                    : count === 0
-                                        ? 'No collections yet'
-                                        : `${count} ${count === 1 ? 'collection' : 'collections'}${totalItems > 0 ? ` · ${totalItems} ${config.noun}${totalItems === 1 ? '' : 's'}` : ''}`;
-                            return <p className='media-tab-subtitle' data-ready={!isLoading}>{text}</p>;
-                        })()}
-                        </div>
+                        <h1 className='media-tab-title' style={{ color: config.color }}>{config.title}</h1>
                     </div>
                     <button className='icon-btn' onClick={() => navigate('/party')} aria-label='Start a party'>
                         <PartyPopperWheel size={22} strokeWidth={2} />
