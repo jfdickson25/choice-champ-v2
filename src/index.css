@@ -573,7 +573,7 @@ button {
 }
 
 ::placeholder {
-  color: rgba(255, 255, 255, 0.698);
+  color: var(--cc-text-faint);
 }
 
 .error {
@@ -724,7 +724,7 @@ button:disabled {
 }
 
 .cc-dialog-input::placeholder {
-  color: rgba(255, 255, 255, 0.35);
+  color: var(--cc-text-faint);
 }
 
 .cc-dialog-hint {
