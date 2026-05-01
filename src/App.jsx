@@ -12,6 +12,7 @@ import BottomNav from './shared/components/Navigation/BottomNav';
 import ErrorBoundary from './shared/components/ErrorBoundary';
 
 import { AuthContext } from './shared/context/auth-context';
+import { ThemeProvider } from './shared/context/theme-context';
 import { supabase } from './shared/lib/supabase';
 
 // After a deploy, the user's still-open tab references the previous
@@ -233,6 +234,7 @@ function App() {
   }
 
   return (
+    <ThemeProvider>
     <AuthContext.Provider value={authValue}>
       <Router>
         <main>
@@ -257,6 +259,7 @@ function App() {
         </main>
       </Router>
     </AuthContext.Provider>
+    </ThemeProvider>
   );
 }
 

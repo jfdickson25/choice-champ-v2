@@ -7,7 +7,12 @@
     max-width: 1200px;
     margin: 0 auto;
     height: calc(72px + env(safe-area-inset-bottom, 0));
-    background-color: #000000;
+    background-color: var(--cc-bottom-nav-bg);
+    /* Hairline top border — invisible in dark mode (border-soft is
+       semi-transparent white, blends into the black bg) and a faint
+       gray separator in light mode where the white nav would
+       otherwise blend into the off-white page. */
+    border-top: 1px solid var(--cc-border-soft);
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     align-items: stretch;
@@ -21,14 +26,14 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #888;
+    color: var(--cc-text-faintest);
     text-decoration: none;
     transition: color 200ms ease-out;
     cursor: pointer;
 }
 
 .bottom-nav-tab:hover {
-    color: #ccc;
+    color: var(--cc-text-muted);
 }
 
 .bottom-nav-tab-highlighted {

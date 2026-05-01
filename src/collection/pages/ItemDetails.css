@@ -232,7 +232,7 @@
     height: 26px;
     padding: 0;
     border-radius: 999px;
-    background-color: rgba(255, 255, 255, 0.18);
+    background-color: var(--cc-border-strong);
     cursor: pointer;
     transition: background-color 150ms ease-out;
 }

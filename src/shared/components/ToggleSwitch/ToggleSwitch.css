@@ -4,7 +4,9 @@
     width: 46px;
     height: 26px;
     border-radius: 999px;
-    background-color: rgba(255, 255, 255, 0.18);
+    /* Off-state track — semi-transparent on the page bg so it reads
+       as a faint pill in both themes. */
+    background-color: var(--cc-border-strong);
     transition: background-color 150ms ease-out;
     cursor: pointer;
     padding: 0;
@@ -23,7 +25,10 @@
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    background-color: #fff;
+    /* Knob contrasts against the track AND against the brand color
+       in the on-state. White on dark + dark-on-light works for both
+       cases when the track lights up yellow/red/blue/etc. */
+    background-color: var(--cc-text);
     transition: transform 150ms ease-out;
 }
 

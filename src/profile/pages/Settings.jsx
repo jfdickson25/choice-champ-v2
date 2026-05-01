@@ -4,13 +4,22 @@ import { ArrowLeft } from 'lucide-react';
 import { Dialog } from '@mui/material';
 
 import { AuthContext } from '../../shared/context/auth-context';
+import { ThemeContext } from '../../shared/context/theme-context';
 import { api } from '../../shared/lib/api';
 import { supabase } from '../../shared/lib/supabase';
+import SegmentedToggle from '../../shared/components/SegmentedToggle/SegmentedToggle';
 
 import './Settings.css';
 
+const THEME_OPTIONS = [
+    { value: 'system', label: 'System' },
+    { value: 'light', label: 'Light' },
+    { value: 'dark', label: 'Dark' },
+];
+
 const Settings = () => {
     const auth = useContext(AuthContext);
+    const { theme, setTheme } = useContext(ThemeContext);
     const navigate = useNavigate();
 
     const [usernameInput, setUsernameInput] = useState(auth.username || '');
@@ -129,6 +138,15 @@ const Settings = () => {
                 </div>
 
                 <h1 className='settings-title'>Settings</h1>
+
+                <section className='settings-block'>
+                    <h2 className='settings-block-title'>Appearance</h2>
+                    <SegmentedToggle
+                        options={THEME_OPTIONS}
+                        value={theme}
+                        onChange={setTheme}
+                    />
+                </section>
 
                 <section className='settings-block'>
                     <h2 className='settings-block-title'>Username</h2>

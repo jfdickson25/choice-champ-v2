@@ -43,6 +43,10 @@
   --cc-divider-on-overlay: rgba(255, 255, 255, 0.06);
   --cc-divider-on-overlay-hover: rgba(255, 255, 255, 0.14);
 
+  /* Bottom nav lives on its own surface — black in dark mode by
+     design (sits flush with iOS home indicator), white in light. */
+  --cc-bottom-nav-bg: #000000;
+
   /* Status */
   --cc-error: #e53e3e;
   --cc-error-strong: #c53030;
@@ -60,6 +64,41 @@
   --cc-board: #45B859;
   --cc-board-pressed: #3a9b4c;
   --cc-book: #A855F7;
+}
+
+/* Light theme — overrides for users who pick "Light" in Settings, or
+   for users with `prefers-color-scheme: light` when they're on the
+   System default. Brand colors deliberately do NOT redefine — Movies
+   stay yellow, TV stays red, etc. Only the surfaces, text, and
+   borders flip. */
+:root[data-theme="light"] {
+  /* Surfaces */
+  --cc-bg: #fafafa;
+  --cc-surface: #ffffff;
+  --cc-surface-2: #e5e5e5;
+  --cc-surface-elevated: #ffffff;
+  --cc-surface-overlay: rgba(255, 255, 255, 0.85);
+  --cc-surface-overlay-hover: rgba(245, 245, 245, 0.95);
+  --cc-surface-menu: #ffffff;
+
+  /* Text */
+  --cc-text: #1a1a1a;
+  --cc-text-soft: #262626;
+  --cc-text-muted: #525252;
+  --cc-text-faint: #737373;
+  --cc-text-faintest: #a3a3a3;
+
+  /* Borders / dividers */
+  --cc-border: #e5e5e5;
+  --cc-border-soft: rgba(0, 0, 0, 0.08);
+  --cc-border-strong: rgba(0, 0, 0, 0.18);
+  --cc-border-overlay: rgba(0, 0, 0, 0.1);
+  --cc-divider-on-overlay: rgba(0, 0, 0, 0.04);
+  --cc-divider-on-overlay-hover: rgba(0, 0, 0, 0.08);
+
+  /* Bottom nav: white surface with a hairline top border (added in
+     BottomNav.css) for separation against the off-white page bg. */
+  --cc-bottom-nav-bg: #ffffff;
 }
 
 * {
