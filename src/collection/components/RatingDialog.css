@@ -15,7 +15,7 @@
 
 .rating-dialog-of-ten {
     font-size: 12pt;
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--cc-text-faint);
     font-weight: 600;
     align-self: flex-end;
     padding-bottom: 6px;
@@ -37,14 +37,14 @@
     height: 36px;
     border-radius: 50%;
     border: none;
-    background-color: rgba(255, 255, 255, 0.08);
-    color: white;
+    background-color: var(--cc-elevation-high);
+    color: var(--cc-text);
     cursor: pointer;
     transition: background-color 150ms ease-out, opacity 150ms ease-out;
 }
 
 .rating-dialog-nudge:hover:not(:disabled) {
-    background-color: rgba(255, 255, 255, 0.16);
+    background-color: var(--cc-border-overlay);
 }
 
 .rating-dialog-nudge:disabled {
@@ -74,7 +74,7 @@
     border: none;
     font-family: inherit;
     font-size: 10pt;
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--cc-text-faint);
     cursor: pointer;
     transition: color 150ms ease-out;
 }

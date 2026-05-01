@@ -45,8 +45,8 @@
     gap: 10px;
     height: 40px;
     padding: 0 14px;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: var(--cc-elevation-mid);
+    border: 1px solid var(--cc-border-overlay);
     border-radius: 999px;
 }
 
@@ -64,7 +64,7 @@
 }
 
 .collection-search-input::placeholder {
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--cc-text-faint);
 }
 
 .collection-search-input:focus {
@@ -152,7 +152,7 @@
     margin: 0;
     font-size: 9pt;
     font-weight: 500;
-    color: rgba(255, 255, 255, 0.55);
+    color: var(--cc-text-muted);
     letter-spacing: 0.5px;
     text-transform: uppercase;
     white-space: nowrap;
@@ -167,7 +167,7 @@
    -------------------------------------------------------------------- */
 
 .share-code-display {
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--cc-elevation-mid);
     border-radius: 10px;
     padding: 16px;
     font-size: 18pt;
@@ -295,7 +295,7 @@
     max-height: 320px;
     overflow-y: auto;
     scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+    scrollbar-color: var(--cc-border-strong) transparent;
 }
 
 .members-row {
@@ -304,7 +304,7 @@
     justify-content: space-between;
     gap: 12px;
     padding: 12px 4px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid var(--cc-elevation-high);
 }
 
 .members-row:last-child {

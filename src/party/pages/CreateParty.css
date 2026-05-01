@@ -10,13 +10,13 @@
 .create-party-title {
     margin: 0;
     font-size: 26pt;
-    color: white;
+    color: var(--cc-text);
     line-height: 1.1;
 }
 
 .create-party-subtitle {
     margin: 6px 0 0 0;
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--cc-text-muted);
     font-size: 11pt;
 }
 
@@ -27,7 +27,7 @@
 .create-party-section-title {
     margin: 0 0 10px 0;
     font-size: 10pt;
-    color: rgba(255, 255, 255, 0.55);
+    color: var(--cc-text-muted);
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.08em;
@@ -35,7 +35,7 @@
 
 /* Options card */
 .create-options-card {
-    background-color: rgba(255, 255, 255, 0.06);
+    background-color: var(--cc-elevation-mid);
     border-radius: 12px;
     overflow: hidden;
 }
@@ -45,7 +45,7 @@
 }
 
 .create-option + .create-option {
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: 1px solid var(--cc-elevation-high);
 }
 
 .create-option-row {
@@ -59,13 +59,13 @@
     margin: 0;
     font-size: 12pt;
     font-weight: 600;
-    color: white;
+    color: var(--cc-text);
 }
 
 .create-option-subtext {
     margin: 6px 0 0 0;
     font-size: 9.5pt;
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--cc-text-muted);
     line-height: 1.4;
 }
 
@@ -88,7 +88,7 @@
     padding: 10px 16px;
     border-radius: 12px;
     border: 1.5px solid transparent;
-    background-color: rgba(255, 255, 255, 0.04);
+    background-color: var(--cc-elevation-low);
     font-family: inherit;
     text-align: left;
     cursor: pointer;
@@ -96,7 +96,7 @@
 }
 
 .create-media-tile:hover {
-    background-color: rgba(255, 255, 255, 0.07);
+    background-color: var(--cc-elevation-mid);
 }
 
 .create-media-tile.is-active {
@@ -125,7 +125,7 @@
     margin: 12px 0;
     text-align: center;
     font-size: 11pt;
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--cc-text-faint);
 }
 
 /* Submit */

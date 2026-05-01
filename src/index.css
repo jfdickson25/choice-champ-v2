@@ -43,9 +43,28 @@
   --cc-divider-on-overlay: rgba(255, 255, 255, 0.06);
   --cc-divider-on-overlay-hover: rgba(255, 255, 255, 0.14);
 
+  /* Elevation overlays — semi-transparent fills used as card / list
+     backgrounds. In dark mode they sit on the page bg as faint
+     white tints; in light mode they invert to faint black tints so
+     the cards still read against the off-white page. Without the
+     theme-aware versions, "rgba white 0.06" becomes invisible on a
+     near-white page. */
+  --cc-elevation-low: rgba(255, 255, 255, 0.04);
+  --cc-elevation-mid: rgba(255, 255, 255, 0.06);
+  --cc-elevation-high: rgba(255, 255, 255, 0.08);
+  --cc-elevation-strong: rgba(255, 255, 255, 0.18);
+  --cc-row-divider: rgba(255, 255, 255, 0.08);
+
   /* Bottom nav lives on its own surface — black in dark mode by
      design (sits flush with iOS home indicator), white in light. */
   --cc-bottom-nav-bg: #000000;
+
+  /* Round icon buttons (back arrow, kebab, etc.) — solid black in
+     dark mode reads as a stamped button; in light mode that'd be a
+     jarring black circle on a near-white page, so flip to a soft
+     gray surface there. */
+  --cc-icon-btn-bg: #000;
+  --cc-icon-btn-bg-hover: #1a1a1a;
 
   /* Status */
   --cc-error: #e53e3e;
@@ -96,9 +115,20 @@
   --cc-divider-on-overlay: rgba(0, 0, 0, 0.04);
   --cc-divider-on-overlay-hover: rgba(0, 0, 0, 0.08);
 
+  /* Elevation overlays inverted — black tints on the off-white page. */
+  --cc-elevation-low: rgba(0, 0, 0, 0.03);
+  --cc-elevation-mid: rgba(0, 0, 0, 0.05);
+  --cc-elevation-high: rgba(0, 0, 0, 0.07);
+  --cc-elevation-strong: rgba(0, 0, 0, 0.18);
+  --cc-row-divider: rgba(0, 0, 0, 0.08);
+
   /* Bottom nav: white surface with a hairline top border (added in
      BottomNav.css) for separation against the off-white page bg. */
   --cc-bottom-nav-bg: #ffffff;
+
+  /* Icon buttons in light mode: soft gray pill, not stamped black. */
+  --cc-icon-btn-bg: #e5e5e5;
+  --cc-icon-btn-bg-hover: #d4d4d4;
 }
 
 * {
@@ -191,7 +221,7 @@ button {
   padding: 0;
   margin: 0;
   border: none;
-  background: #000;
+  background: var(--cc-icon-btn-bg);
   color: var(--cc-text-muted);
   border-radius: 50%;
   cursor: pointer;
@@ -199,7 +229,7 @@ button {
 }
 
 .icon-btn:hover {
-  background: var(--cc-surface);
+  background: var(--cc-icon-btn-bg-hover);
   color: var(--cc-text);
 }
 

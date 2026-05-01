@@ -12,13 +12,13 @@
 .contact-title {
     margin: 12px 0 12px 0;
     font-size: 24pt;
-    color: white;
+    color: var(--cc-text);
     text-align: center;
 }
 
 .contact-intro {
     margin: 0 0 24px 0;
-    color: rgba(255, 255, 255, 0.75);
+    color: var(--cc-text-soft);
     font-size: 11pt;
     line-height: 1.5;
     text-align: center;
@@ -29,13 +29,13 @@
     align-items: center;
     gap: 12px;
     padding: 16px;
-    background-color: rgba(255, 255, 255, 0.06);
+    background-color: var(--cc-elevation-mid);
     border-radius: 12px;
-    color: white;
+    color: var(--cc-text);
     text-decoration: none;
     font-size: 12pt;
 }
 
 .contact-email-card:active {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: var(--cc-border-soft);
 }

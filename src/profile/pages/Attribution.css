@@ -12,16 +12,16 @@
 .attribution-title {
     margin: 12px 0 24px 0;
     font-size: 24pt;
-    color: white;
+    color: var(--cc-text);
     text-align: center;
 }
 
 .attribution-block {
     margin-bottom: 24px;
     padding: 16px;
-    background-color: rgba(255, 255, 255, 0.06);
+    background-color: var(--cc-elevation-mid);
     border-radius: 12px;
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--cc-text-soft);
     display: flex;
     align-items: center;
     gap: 14px;
@@ -30,7 +30,7 @@
 .attribution-block h2 {
     margin: 0 0 8px 0;
     font-size: 14pt;
-    color: white;
+    color: var(--cc-text);
 }
 
 .attribution-block p {
@@ -45,7 +45,7 @@
    White underlined keeps them obviously interactive without grabbing
    attention away from the body copy. */
 .attribution-block a {
-    color: white;
+    color: var(--cc-text);
     text-decoration: underline;
     text-underline-offset: 2px;
 }
@@ -56,7 +56,7 @@
 
 .attribution-subtitle {
     margin-bottom: 12px !important;
-    color: rgba(255, 255, 255, 0.65) !important;
+    color: var(--cc-text-faint) !important;
 }
 
 .attribution-logo {

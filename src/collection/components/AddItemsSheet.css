@@ -1,6 +1,6 @@
 .add-items-sheet-paper {
     background-color: var(--cc-bg) !important;
-    color: white !important;
+    color: var(--cc-text) !important;
     margin: 0 !important;
     /* Edge-to-edge fullScreen on mobile; standard MUI handles desktop. */
 }
@@ -33,14 +33,14 @@
     gap: 10px;
     height: 40px;
     padding: 0 14px;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: var(--cc-elevation-mid);
+    border: 1px solid var(--cc-border-overlay);
     border-radius: 999px;
 }
 
 .add-items-sheet-search-icon {
     flex-shrink: 0;
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--cc-text-faint);
 }
 
 .add-items-sheet-search {
@@ -51,7 +51,7 @@
     padding: 0;
     border: none;
     background: transparent;
-    color: white;
+    color: var(--cc-text);
     font-family: inherit;
     font-size: 11pt;
 }
@@ -59,7 +59,7 @@
 .add-items-sheet-search:focus { outline: none; }
 
 .add-items-sheet-search::placeholder {
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--cc-text-faint);
 }
 
 /* Clear-text button — appears inside the search pill when there's a
@@ -101,7 +101,7 @@
     align-items: center;
     justify-content: center;
     padding: 60px 16px;
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--cc-text-muted);
     font-size: 11pt;
     text-align: center;
 }
@@ -131,7 +131,7 @@
     padding: 0;
     border: none;
     border-radius: 10px;
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--cc-elevation-low);
     cursor: pointer;
     overflow: hidden;
     transition: transform 100ms ease-out, opacity 150ms ease-out;
@@ -161,7 +161,7 @@
     justify-content: center;
     padding: 12px;
     text-align: center;
-    color: rgba(255, 255, 255, 0.55);
+    color: var(--cc-text-muted);
     font-size: 10pt;
     font-weight: 600;
     box-sizing: border-box;
@@ -181,7 +181,9 @@
     align-items: center;
     justify-content: center;
     background-color: rgba(0, 0, 0, 0.7);
-    color: white;
+    /* Badge bg is theme-independent (sits on poster art) so the text
+       must stay white in both modes — don't swap to var(--cc-text). */
+    color: #fff;
     -webkit-backdrop-filter: blur(8px);
     backdrop-filter: blur(8px);
     transition: background-color 150ms ease-out, color 150ms ease-out;
