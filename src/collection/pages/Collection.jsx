@@ -467,16 +467,10 @@ const Collection = ({ socket }) => {
     };
 
     const navBack = () => {
-        // Honor the user's actual entry point — Profile, MediaTab, deep
-        // link, etc. — by walking one step back through history. Falls
-        // back to the MediaTab list when the page was opened directly
-        // (no prior history entry from this app), so the button never
-        // looks broken.
-        if (window.history.length > 1) {
-            navigate(-1);
-        } else {
-            navigate(`/collections/${collectionType}`);
-        }
+        // Always return to the Collections list view for this media
+        // type. Avoids history-walk weirdness after the X-out chain
+        // from ItemDetails / CastDetail forward-pushes back here.
+        navigate(`/collections/${collectionType}`);
     }
 
     const openDetails = (item) => {
