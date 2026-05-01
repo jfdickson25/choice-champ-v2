@@ -14,6 +14,7 @@ import RatingDialog from '../components/RatingDialog';
 import RatingsStrip from '../components/RatingsStrip';
 import CastRail from '../components/CastRail';
 import SimilarRail from '../components/SimilarRail';
+import TrailerButton from '../components/TrailerButton';
 import './ItemDetails.css';
 
 // Format a movie runtime in minutes as "Xh Ym" / "Xh" / "Ym".
@@ -377,8 +378,31 @@ const ItemDetails = () => {
                     )}
                     <h1 className='item-details-title' style={{ color }}>{details.title}</h1>
 
+                    {(collectionType === 'movie' || collectionType === 'tv') && (
+                        (() => {
+                            const credit = collectionType === 'movie'
+                                ? (details.director ? `Directed by ${details.director}` : null)
+                                : (Array.isArray(details.creators) && details.creators.length > 0
+                                    ? `Created by ${details.creators.join(' & ')}`
+                                    : null);
+                            return credit ? <p className='item-details-credit'>{credit}</p> : null;
+                        })()
+                    )}
+
+                    {(collectionType === 'movie' || collectionType === 'tv') && Array.isArray(details.genres) && details.genres.length > 0 && (
+                        <div className='item-details-genres'>
+                            {details.genres.map(genre => (
+                                <span key={genre} className='item-details-genre'>{genre}</span>
+                            ))}
+                        </div>
+                    )}
+
                     {(collectionType === 'movie' || collectionType === 'tv') && details.ratings && (
                         <RatingsStrip ratings={details.ratings} />
+                    )}
+
+                    {(collectionType === 'movie' || collectionType === 'tv') && details.trailer && (
+                        <TrailerButton trailer={details.trailer} accentColor={color} />
                     )}
 
                     {infoRows.length > 0 && (

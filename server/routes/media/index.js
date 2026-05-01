@@ -414,7 +414,7 @@ router
         if(type === 'movie' || type === 'tv') {
             const tmdbKey = process.env.MOVIE_DB_API_KEY;
             const [detailsRes, providersRes, creditsRes, recommendationsRes] = await Promise.all([
-                fetch(`https://api.themoviedb.org/3/${type}/${id}?api_key=${tmdbKey}&language=en-US&append_to_response=external_ids,release_dates,content_ratings`),
+                fetch(`https://api.themoviedb.org/3/${type}/${id}?api_key=${tmdbKey}&language=en-US&append_to_response=external_ids,release_dates,content_ratings,videos`),
                 fetch(`https://api.themoviedb.org/3/${type}/${id}/watch/providers?api_key=${tmdbKey}&language=en-US`),
                 fetch(`https://api.themoviedb.org/3/${type}/${id}/credits?api_key=${tmdbKey}&language=en-US`),
                 fetch(`https://api.themoviedb.org/3/${type}/${id}/recommendations?api_key=${tmdbKey}&language=en-US`),
@@ -506,6 +506,30 @@ router
             const valueOrNull = (v) => (v && v !== 'N/A' ? v : null);
             const rtScore = omdbData?.Ratings?.find(r => r.Source === 'Rotten Tomatoes')?.Value || null;
 
+            // Pick the best YouTube trailer. TMDB returns videos in
+            // creation order; preference is type=Trailer + official=true,
+            // then type=Trailer, then any Teaser as a last resort.
+            const ytVideos = (detailsData.videos?.results || []).filter(v => v.site === 'YouTube');
+            const trailer = ytVideos.find(v => v.type === 'Trailer' && v.official)
+                || ytVideos.find(v => v.type === 'Trailer')
+                || ytVideos.find(v => v.type === 'Teaser')
+                || null;
+
+            // Director (movies) / Creators (TV). For movies we filter
+            // crew by job === 'Director'; multi-director films exist
+            // (Coen brothers, Russos) so join with " & " when present.
+            // For TV, TMDB returns created_by directly on details.
+            let director = null;
+            let creators = [];
+            if(type === 'movie') {
+                const directors = (creditsData?.crew || [])
+                    .filter(c => c.job === 'Director')
+                    .map(c => c.name);
+                if(directors.length > 0) director = directors.join(' & ');
+            } else {
+                creators = (detailsData.created_by || []).map(c => c.name);
+            }
+
             const response = {
                 details: {
                     title: title,
@@ -516,6 +540,10 @@ router
                     runtime: runtime,
                     rating: detailsData.vote_average != null ? detailsData.vote_average.toFixed(1) : null,
                     mpaaRating,
+                    genres: Array.isArray(detailsData.genres) ? detailsData.genres.map(g => g.name) : [],
+                    director,
+                    creators,
+                    trailer: trailer ? { key: trailer.key, name: trailer.name || 'Trailer' } : null,
                     ratings: {
                         tmdb: detailsData.vote_average != null ? detailsData.vote_average.toFixed(1) : null,
                         imdb: valueOrNull(omdbData?.imdbRating),
