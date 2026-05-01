@@ -191,17 +191,20 @@ const MediaTabFull = ({ type, config }) => {
     };
 
     return (
-        <div className='media-tab'>
+        <div className={`media-tab${isDiscoverSearching ? ' is-searching' : ''}`}>
             {!isDiscoverSearching && (
-            <div className='media-tab-sticky-header'>
-                <div className='media-tab-top-row'>
-                    <button className='icon-btn' onClick={() => navigate('/profile')} aria-label='Profile'>
-                        <User size={22} strokeWidth={2} />
-                    </button>
-                    <div className='media-tab-title-block'>
+                <React.Fragment>
+                    <div className='floating-topbar'>
+                        <button className='icon-btn icon-btn-floating' onClick={() => navigate('/profile')} aria-label='Profile'>
+                            <User size={22} strokeWidth={2} />
+                        </button>
+                        <button className='icon-btn icon-btn-floating' onClick={() => navigate('/party')} aria-label='Start a party'>
+                            <PartyPopperWheel size={22} strokeWidth={2} />
+                        </button>
+                    </div>
+                    <div className='media-tab-large-title'>
                         {config.Icon && <config.Icon size={30} strokeWidth={1.75} color={config.color} />}
-                        <div className='media-tab-title-text'>
-                            <h1 className='media-tab-title' style={{ color: config.color }}>{config.title}</h1>
+                        <h1 className='media-tab-title' style={{ color: config.color }}>{config.title}</h1>
                             {(() => {
                                 const count = collections.length;
                                 const totalItems = collections.reduce((s, c) => s + (Array.isArray(c.items) ? c.items.length : 0), 0);
@@ -210,23 +213,20 @@ const MediaTabFull = ({ type, config }) => {
                                     : count === 0
                                         ? 'No collections yet'
                                         : `${count} ${count === 1 ? 'collection' : 'collections'}${totalItems > 0 ? ` · ${totalItems} ${config.noun}${totalItems === 1 ? '' : 's'}` : ''}`;
-                                return <p className='media-tab-subtitle' data-ready={!isLoading}>{text}</p>;
-                            })()}
-                        </div>
+                            return <p className='media-tab-subtitle' data-ready={!isLoading}>{text}</p>;
+                        })()}
                     </div>
-                    <button className='icon-btn' onClick={() => navigate('/party')} aria-label='Start a party'>
-                        <PartyPopperWheel size={22} strokeWidth={2} />
-                    </button>
-                </div>
-                {!isReorder && (
-                    <SegmentedToggle
-                        options={VIEW_OPTIONS}
-                        value={view}
-                        onChange={handleViewChange}
-                        activeColor={config.color}
-                    />
-                )}
-            </div>
+                    {!isReorder && (
+                        <div className='media-tab-toggle-wrap'>
+                            <SegmentedToggle
+                                options={VIEW_OPTIONS}
+                                value={view}
+                                onChange={handleViewChange}
+                                activeColor={config.color}
+                            />
+                        </div>
+                    )}
+                </React.Fragment>
             )}
 
             <div className='media-tab-content'>

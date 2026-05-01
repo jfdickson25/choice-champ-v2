@@ -8,18 +8,31 @@
     width: 100%;
     max-width: 1400px;
     margin: 0 auto;
-    padding: 0 16px calc(env(safe-area-inset-bottom, 0) + 88px) 16px;
+    /* Top padding clears the floating topbar; bottom padding clears the
+       floating action buttons. Search mode overrides the top via the
+       .is-search-mode modifier since the search header occupies that
+       space itself. */
+    padding: calc(env(safe-area-inset-top, 0) + 64px) 16px calc(env(safe-area-inset-bottom, 0) + 88px) 16px;
 }
 
-/* ---------- Sticky top region: top row | title | search --------------- */
+.collection-page.is-search-mode {
+    padding-top: 0;
+}
 
-.collection-sticky-header {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    margin: 0 -16px;
-    padding: calc(env(safe-area-inset-top, 0) + 12px) 16px 10px 16px;
-    background-color: var(--cc-bg);
+/* Scrollable large title — replaces the old sticky-header title block. */
+.collection-large-title {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    text-align: center;
+    margin: 8px 0 16px 0;
+    opacity: 0;
+    transition: opacity 180ms ease-out;
+}
+
+.collection-large-title[data-ready="true"] {
+    opacity: 1;
 }
 
 /* Search-mode sticky header — replaces the normal one while searching.
@@ -94,36 +107,6 @@
     font-weight: 600;
     cursor: pointer;
     white-space: nowrap;
-}
-
-.collection-top-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    width: 100%;
-}
-
-.collection-top-row-right {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-shrink: 0;
-}
-
-.collection-title-block {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-    text-align: center;
-    opacity: 0;
-    transition: opacity 180ms ease-out;
-}
-
-.collection-title-block[data-ready="true"] {
-    opacity: 1;
 }
 
 .collection-title-row {

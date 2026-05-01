@@ -634,7 +634,7 @@ const Collection = ({ socket }) => {
 
     return (
         <React.Fragment>
-            <div className='collection-page'>
+            <div className={`collection-page${searchModeActive ? ' is-search-mode' : ''}`}>
                 {searchModeActive ? (
                     <div
                         className='collection-search-sticky-header'
@@ -683,8 +683,7 @@ const Collection = ({ socket }) => {
                         </button>
                     </div>
                 ) : (
-                <div className='collection-sticky-header'>
-                    {(() => {
+                    (() => {
                         // Pull icon / noun / verb from the shared
                         // MEDIA_TYPES config so a new type (Books today,
                         // Podcasts tomorrow) doesn't need its own
@@ -699,36 +698,35 @@ const Collection = ({ socket }) => {
                             ? 'Empty collection'
                             : `${total} ${noun}${total === 1 ? '' : 's'}${watchedCount > 0 ? ` · ${watchedCount} ${verb}` : ''}`;
                         return (
-                            <div className='collection-top-row'>
-                                <button className='icon-btn' onClick={navBack} aria-label='Back'>
-                                    <ArrowLeft size={22} strokeWidth={2.5} />
-                                </button>
-                                <div className='collection-title-block' data-ready={!isLoading}>
-                                    <div className='collection-title-row'>
-                                        <TypeIcon size={22} strokeWidth={1.75} color={collectionTypeColor} />
-                                        <h2 className={`collection-title color-${collectionType}`}>{collectionName}</h2>
-                                    </div>
-                                    <p className='collection-subtitle'>{subtitle}</p>
-                                </div>
-                                <div className='collection-top-row-right'>
+                            <React.Fragment>
+                                <div className='floating-topbar'>
+                                    <button className='icon-btn icon-btn-floating' onClick={navBack} aria-label='Back'>
+                                        <ArrowLeft size={22} strokeWidth={2.5} />
+                                    </button>
                                     {isEdit || isQuickEdit ? (
                                         <button
-                                            className='icon-btn'
+                                            className='icon-btn icon-btn-floating'
                                             onClick={isEdit ? exitManage : exitQuickEdit}
                                             aria-label='Done'
                                         >
                                             <Check size={24} strokeWidth={3} />
                                         </button>
                                     ) : (
-                                        <button className='icon-btn' onClick={openKebab} aria-label='More'>
+                                        <button className='icon-btn icon-btn-floating' onClick={openKebab} aria-label='More'>
                                             <MoreVertical size={22} strokeWidth={2.5} />
                                         </button>
                                     )}
                                 </div>
-                            </div>
+                                <div className='collection-large-title' data-ready={!isLoading}>
+                                    <div className='collection-title-row'>
+                                        <TypeIcon size={22} strokeWidth={1.75} color={collectionTypeColor} />
+                                        <h2 className={`collection-title color-${collectionType}`}>{collectionName}</h2>
+                                    </div>
+                                    <p className='collection-subtitle'>{subtitle}</p>
+                                </div>
+                            </React.Fragment>
                         );
-                    })()}
-                </div>
+                    })()
                 )}
 
                 {isLoading && (
