@@ -373,26 +373,7 @@ const ItemDetails = () => {
                 </div>
             ) : (
                 <React.Fragment>
-                    {(collectionType === 'movie' || collectionType === 'tv') && details.backdrop ? (
-                        // Cinematic hero — TMDB landscape backdrop with the
-                        // poster card overlapping the bottom edge, JustWatch /
-                        // Letterboxd style. Falls back to the centered poster
-                        // hero below when no backdrop is available.
-                        <div className='item-details-backdrop-hero'>
-                            <div className='item-details-backdrop-wrap'>
-                                <img className='item-details-backdrop' src={details.backdrop} alt='' />
-                                <div className='item-details-backdrop-fade' />
-                            </div>
-                            {(details.poster || passedPoster) && (
-                                <img
-                                    key={details.poster || passedPoster}
-                                    className='item-details-backdrop-poster'
-                                    src={details.poster || passedPoster}
-                                    alt={`${details.title} poster`}
-                                />
-                            )}
-                        </div>
-                    ) : (details.poster || passedPoster) && (
+                    {(details.poster || passedPoster) && (
                         <div className='item-details-poster-wrap'>
                             {/* Prefer the fresh /getInfo poster once it loads;
                                 show passedPoster instantly so there's no blank
@@ -587,7 +568,10 @@ const ItemDetails = () => {
                     {details.overview && (
                         <section className='item-details-section'>
                             <h2 className='item-details-section-title'>Overview</h2>
-                            <div className='item-details-card item-details-overview-card'>
+                            <div
+                                className={`item-details-card item-details-overview-card${(collectionType === 'movie' || collectionType === 'tv') && details.backdrop ? ' has-backdrop' : ''}`}
+                                style={(collectionType === 'movie' || collectionType === 'tv') && details.backdrop ? { backgroundImage: `url(${details.backdrop})` } : undefined}
+                            >
                                 <div
                                     className='item-details-overview'
                                     dangerouslySetInnerHTML={{ __html: details.overview || '' }}
