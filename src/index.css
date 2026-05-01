@@ -122,6 +122,12 @@
   --cc-elevation-strong: rgba(0, 0, 0, 0.18);
   --cc-row-divider: rgba(0, 0, 0, 0.08);
 
+  /* Softer destructive red on a white page — the dark-mode #c53030
+     reads as a stop-light on a near-white dialog. These keep the
+     button clearly red without feeling aggressive. */
+  --cc-error-strong: #e85a5a;
+  --cc-error: #f06b6b;
+
   /* Bottom nav: white surface with a hairline top border (added in
      BottomNav.css) for separation against the off-white page bg. */
   --cc-bottom-nav-bg: #ffffff;
@@ -806,6 +812,9 @@ button:disabled {
 
 .cc-dialog-btn-danger {
   background: var(--cc-error-strong);
-  color: var(--cc-text);
+  /* White on red works in both themes; var(--cc-text) would flip to
+     dark text on red in light mode, which reads worse than a
+     conventional white-on-red destructive button. */
+  color: #fff;
 }
 .cc-dialog-btn-danger:hover:not(:disabled) { background: var(--cc-error); }
