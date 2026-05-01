@@ -505,7 +505,6 @@ const ItemDetails = () => {
                 <button
                     type='button'
                     className='item-details-manage-fab'
-                    style={{ backgroundColor: color }}
                     onClick={() => setManageOpen(true)}
                     aria-label='Manage status, rating, and collections'
                 >

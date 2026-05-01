@@ -5,9 +5,9 @@
     padding-bottom: calc(env(safe-area-inset-bottom, 0) + 92px);
 }
 
-/* Sticky Manage FAB — pill-shaped, media-color, fixed at bottom.
-   Slightly translucent with a backdrop blur so the page reads
-   through the button instead of feeling stamped on top of it. */
+/* Sticky Manage FAB — Apple "Liquid Glass" aesthetic. Very light
+   theme-aware tint, strong backdrop blur, crisp hairline border.
+   Theme-agnostic so the same chrome works across every media type. */
 .item-details-manage-fab {
     position: fixed;
     bottom: calc(env(safe-area-inset-bottom, 0) + 16px);
@@ -16,31 +16,39 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 11px 20px;
-    border: none;
+    padding: 10px 18px;
     border-radius: 999px;
-    color: #111;
-    font-size: 11.5pt;
-    font-weight: 700;
+    color: var(--cc-text);
+    font-size: 11pt;
+    font-weight: 600;
     letter-spacing: 0.02em;
     cursor: pointer;
-    opacity: 0.82;
-    backdrop-filter: blur(10px) saturate(160%);
-    -webkit-backdrop-filter: blur(10px) saturate(160%);
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
-    transition: transform 120ms ease-out, opacity 150ms ease-out, filter 150ms ease-out;
+    background-color: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(22px) saturate(180%);
+    -webkit-backdrop-filter: blur(22px) saturate(180%);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    transition: transform 120ms ease-out, background-color 150ms ease-out;
     z-index: 1100;
     font-family: inherit;
 }
 
+:root[data-theme="light"] .item-details-manage-fab {
+    background-color: rgba(255, 255, 255, 0.55);
+    border-color: rgba(0, 0, 0, 0.08);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
 .item-details-manage-fab:hover {
-    opacity: 1;
+    background-color: rgba(255, 255, 255, 0.14);
+}
+
+:root[data-theme="light"] .item-details-manage-fab:hover {
+    background-color: rgba(255, 255, 255, 0.75);
 }
 
 .item-details-manage-fab:active {
     transform: translateX(-50%) scale(0.97);
-    opacity: 1;
-    filter: brightness(0.94);
 }
 
 /* Manage bottom sheet (MUI SwipeableDrawer paper). */
