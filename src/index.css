@@ -852,6 +852,14 @@ button:disabled {
   accent-color: var(--cc-movie);
 }
 
+/* Disabled radio rows fade so the user can see the option is locked
+   while still reading the explanatory note inside (e.g. "(no other
+   accounts joined)" on the party-export dialog). */
+.cc-dialog-radio-row:has(input:disabled) {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .cc-dialog-hint {
   margin: 10px 0 0 0;
   font-size: 10pt;
