@@ -90,10 +90,12 @@ const PartyWait = () => {
 
     return (
         <div className='content party-wait'>
-            <div className='page-topbar'>
+            <div className='party-wait-sticky-header'>
                 <button className='icon-btn' onClick={navBack} aria-label='Cancel party'>
                     <X size={22} strokeWidth={2} />
                 </button>
+                <h1 className='party-wait-header-title'>Party Lobby</h1>
+                <span className='party-wait-header-spacer' />
             </div>
 
             <div className='party-wait-hero'>

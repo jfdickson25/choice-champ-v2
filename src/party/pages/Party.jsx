@@ -715,7 +715,11 @@ const isOwnerVoting = userType === 'owner' && collectionItems.length > 1 && !fin
                 <button className='icon-btn' onClick={navToParty} aria-label='Cancel party'>
                     <X size={22} strokeWidth={2} />
                 </button>
-                {isOwnerVoting && (
+                {!finished && (
+                    <h1 className='party-voting-header-title'>Time to Vote!</h1>
+                )}
+                {finished && <span className='party-voting-header-title' aria-hidden='true' />}
+                {isOwnerVoting ? (
                     <div className='party-voting-actions'>
                         <button className='icon-btn' onClick={selectFlag} aria-label='End voting early'>
                             <Flag size={22} strokeWidth={2} />
@@ -724,6 +728,8 @@ const isOwnerVoting = userType === 'owner' && collectionItems.length > 1 && !fin
                             <Dices size={22} strokeWidth={2} />
                         </button>
                     </div>
+                ) : (
+                    <span className='party-voting-header-spacer' aria-hidden='true' />
                 )}
             </div>
 
