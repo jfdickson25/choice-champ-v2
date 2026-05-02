@@ -55,15 +55,17 @@ const PartyHome = () => {
                     </div>
                     <span className='party-home-header-spacer' />
                 </div>
-                <SegmentedToggle
-                    options={VIEW_OPTIONS}
-                    value={view}
-                    onChange={setView}
-                    activeColor={collectionTypeColor}
-                />
             </div>
 
             <div className='party-home-body'>
+                <div className='party-home-toggle-wrap'>
+                    <SegmentedToggle
+                        options={VIEW_OPTIONS}
+                        value={view}
+                        onChange={setView}
+                        activeColor={collectionTypeColor}
+                    />
+                </div>
                 {view === 'create'
                     ? <CreateParty
                         activeMediaType={activeMediaType}

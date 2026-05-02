@@ -65,9 +65,15 @@
 .party-home-body {
     width: 100%;
     margin-top: 0;
-    /* Small breathing room so the form isn't hugging the glass header
-       at scrolltop = 0. Matches the Collections list treatment. */
+    /* Small breathing room so the toggle isn't hugging the glass
+       header at scrolltop = 0. Matches the Collections list. */
     padding-top: 12px;
+}
+
+/* Toggle now lives in the scrolling body (not sticky), with bottom
+   spacing so it doesn't run into the form below. */
+.party-home-toggle-wrap {
+    margin-bottom: 16px;
 }
 
 .offline-msg {
