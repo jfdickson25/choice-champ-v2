@@ -12,7 +12,6 @@ import { X, Dices, Flag, Minus, Plus, Star, SlidersHorizontal, Columns2, Columns
 import { Dialog } from '@mui/material';
 import SortFilterPanel from '../../shared/components/SortFilterPanel/SortFilterPanel';
 import { getMediaType } from '../../shared/lib/mediaTypes';
-import CheckeredFlag from '../../shared/components/Icons/CheckeredFlag';
 import {
     shapeIncomingItems,
     filterByVotesAndSuperChoice,
@@ -972,7 +971,7 @@ const isOwnerVoting = userType === 'owner' && collectionItems.length > 1 && !fin
                         slideDown ? { transform: 'translateY(100vh)', transition: 'transform 2s ease-in-out' } : null
                     }
                 >
-                    <CheckeredFlag className='flag-selected' strokeWidth={1.25} />
+                    <Flag className='flag-selected' color='#fff' strokeWidth={1.25} />
                 </div>
             )
         }
