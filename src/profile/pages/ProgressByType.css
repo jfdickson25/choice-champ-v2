@@ -60,6 +60,12 @@
     padding: 40px 16px;
 }
 
+.progress-view-toggle {
+    width: 100%;
+    max-width: 280px;
+    margin: 4px auto 14px auto;
+}
+
 .progress-summary {
     margin: 4px 0 14px 0;
     text-align: center;

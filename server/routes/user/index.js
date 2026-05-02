@@ -104,29 +104,50 @@ router
                 created_at: c.created_at,
                 total: 0,
                 complete: 0,
+                userComplete: 0,
                 items: [],
             }));
 
         if (collections.length > 0) {
             const ids = collections.map(c => c.id);
-            const { data: items, error: itemsErr } = await supabase
-                .from('collection_items')
-                .select('id, collection_id, title, poster, complete, item_id')
-                .in('collection_id', ids);
+            const [
+                { data: items, error: itemsErr },
+                { data: watched, error: watchedErr },
+            ] = await Promise.all([
+                supabase
+                    .from('collection_items')
+                    .select('id, collection_id, title, poster, complete, item_id')
+                    .in('collection_id', ids),
+                // Per-user personal completion flags. Independent from
+                // collection_items.complete (the shared/group flag) so we
+                // can render a "Group / You" toggle that flips the lens
+                // without re-fetching.
+                supabase
+                    .from('watched_media')
+                    .select('item_id')
+                    .eq('user_id', userId)
+                    .eq('media_type', type)
+                    .eq('completed', true),
+            ]);
             if (itemsErr) return res.status(500).json({ errMsg: itemsErr.message });
+            if (watchedErr) return res.status(500).json({ errMsg: watchedErr.message });
 
+            const watchedItemIds = new Set((watched || []).map(w => String(w.item_id)));
             const byId = new Map(collections.map(c => [c.id, c]));
             (items || []).forEach(it => {
                 const c = byId.get(it.collection_id);
                 if (!c) return;
+                const userComplete = watchedItemIds.has(String(it.item_id));
                 c.total++;
                 if (it.complete) c.complete++;
+                if (userComplete) c.userComplete++;
                 c.items.push({
                     id: it.id,
                     itemId: it.item_id,
                     title: it.title,
                     poster: it.poster,
                     complete: !!it.complete,
+                    userComplete,
                 });
             });
         }
@@ -139,15 +160,16 @@ router
             return at - bt;
         });
 
-        // Roll up the page-level summary so the new page can show
-        // "Across 5 collections · 60% complete · 234 of 388 watched"
-        // without recomputing in the client.
+        // Roll up the page-level summary for both the Group lens
+        // (collection_items.complete) and the You lens (watched_media)
+        // so the client can flip between them without recomputing.
         const summary = collections.reduce((acc, c) => {
             acc.totalCollections += 1;
             acc.totalItems += c.total;
             acc.completeItems += c.complete;
+            acc.userCompleteItems += c.userComplete;
             return acc;
-        }, { totalCollections: 0, totalItems: 0, completeItems: 0 });
+        }, { totalCollections: 0, totalItems: 0, completeItems: 0, userCompleteItems: 0 });
 
         res.json({ type, summary, collections });
     })

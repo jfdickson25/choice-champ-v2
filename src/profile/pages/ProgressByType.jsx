@@ -6,6 +6,7 @@ import Loading from '../../shared/components/Loading';
 import { AuthContext } from '../../shared/context/auth-context';
 import { api } from '../../shared/lib/api';
 import { getMediaType, watchedLabelFor, unwatchedLabelFor } from '../../shared/lib/mediaTypes';
+import SegmentedToggle from '../../shared/components/SegmentedToggle/SegmentedToggle';
 import './ProgressByType.css';
 
 const SORT_OPTIONS = [
@@ -14,7 +15,19 @@ const SORT_OPTIONS = [
     { value: 'alpha',    label: 'A → Z' },
 ];
 
-const sortCollections = (collections, sort) => {
+const VIEW_OPTIONS = [
+    { value: 'group', label: 'Group' },
+    { value: 'you',   label: 'You' },
+];
+
+// Pull the right completion flag for the active view ("Group" reads
+// the shared collection_items.complete column; "You" reads each
+// item's userComplete which the backend derives from watched_media).
+const completeFor = (item, view) => view === 'you' ? !!item.userComplete : !!item.complete;
+const completeCountFor = (collection, view) =>
+    view === 'you' ? (collection.userComplete || 0) : (collection.complete || 0);
+
+const sortCollections = (collections, sort, view) => {
     const arr = [...collections];
     switch (sort) {
         case 'alpha':
@@ -31,8 +44,8 @@ const sortCollections = (collections, sort) => {
             // Highest completion percentage first; empty collections fall
             // to the bottom so "what's almost done" sits at the top.
             return arr.sort((a, b) => {
-                const ap = a.total > 0 ? a.complete / a.total : -1;
-                const bp = b.total > 0 ? b.complete / b.total : -1;
+                const ap = a.total > 0 ? completeCountFor(a, view) / a.total : -1;
+                const bp = b.total > 0 ? completeCountFor(b, view) / b.total : -1;
                 return bp - ap;
             });
     }
@@ -50,6 +63,7 @@ const ProgressByType = () => {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [sort, setSort] = useState('progress');
+    const [view, setView] = useState('group');
     const [expandedId, setExpandedId] = useState(null);
 
     useEffect(() => {
@@ -74,16 +88,17 @@ const ProgressByType = () => {
 
     const sortedCollections = useMemo(() => {
         if (!data?.collections) return [];
-        return sortCollections(data.collections, sort);
-    }, [data, sort]);
+        return sortCollections(data.collections, sort, view);
+    }, [data, sort, view]);
 
     const summaryText = useMemo(() => {
         if (!data?.summary) return '';
-        const { totalCollections, totalItems, completeItems } = data.summary;
+        const { totalCollections, totalItems, completeItems, userCompleteItems } = data.summary;
+        const completed = view === 'you' ? (userCompleteItems || 0) : completeItems;
         if (totalItems === 0) return `${totalCollections} ${totalCollections === 1 ? 'collection' : 'collections'} · No items yet`;
-        const pct = Math.round((completeItems / totalItems) * 100);
-        return `${totalCollections} ${totalCollections === 1 ? 'collection' : 'collections'} · ${pct}% complete · ${completeItems} of ${totalItems} ${config.action}`;
-    }, [data, config.action]);
+        const pct = Math.round((completed / totalItems) * 100);
+        return `${totalCollections} ${totalCollections === 1 ? 'collection' : 'collections'} · ${pct}% complete · ${completed} of ${totalItems} ${config.action}`;
+    }, [data, config.action, view]);
 
     const openItem = (collection, item) => {
         const params = new URLSearchParams({ cid: collection.id, mid: item.id });
@@ -114,6 +129,15 @@ const ProgressByType = () => {
                     <p className='progress-empty'>No collections yet</p>
                 ) : (
                     <React.Fragment>
+                        <div className='progress-view-toggle'>
+                            <SegmentedToggle
+                                options={VIEW_OPTIONS}
+                                value={view}
+                                onChange={setView}
+                                activeColor={config.color}
+                            />
+                        </div>
+
                         <p className='progress-summary'>{summaryText}</p>
 
                         <div className='progress-sort-row' role='radiogroup' aria-label='Sort'>
@@ -135,9 +159,10 @@ const ProgressByType = () => {
                         <div className='progress-list'>
                             {sortedCollections.map(c => {
                                 const isOpen = expandedId === c.id;
-                                const pct = c.total > 0 ? Math.round((c.complete / c.total) * 100) : 0;
-                                const watchedItems = c.items.filter(i => i.complete);
-                                const unwatchedItems = c.items.filter(i => !i.complete);
+                                const completeCount = completeCountFor(c, view);
+                                const pct = c.total > 0 ? Math.round((completeCount / c.total) * 100) : 0;
+                                const watchedItems = c.items.filter(i => completeFor(i, view));
+                                const unwatchedItems = c.items.filter(i => !completeFor(i, view));
                                 return (
                                     <div key={c.id} className={`progress-card ${isOpen ? 'is-open' : ''}`}>
                                         <button
@@ -149,7 +174,7 @@ const ProgressByType = () => {
                                             <div className='progress-card-row'>
                                                 <span className='progress-card-name'>{c.name}</span>
                                                 <span className='progress-card-count'>
-                                                    {c.total === 0 ? 'Empty' : `${c.complete} / ${c.total}`}
+                                                    {c.total === 0 ? 'Empty' : `${completeCount} / ${c.total}`}
                                                 </span>
                                                 <ChevronDown
                                                     size={18}
