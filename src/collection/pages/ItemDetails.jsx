@@ -438,6 +438,27 @@ const ItemDetails = () => {
                         </section>
                     )}
 
+                    <section className='item-details-section'>
+                        <div className='item-details-card'>
+                            <button
+                                type='button'
+                                className='item-details-rating-row'
+                                onClick={() => setRatingDialogOpen(true)}
+                                aria-label={userRating != null ? `Edit your rating, currently ${userRating.toFixed(1)} out of 10` : rateLabel}
+                            >
+                                <span className='item-details-row-label'>Your Rating</span>
+                                {userRating != null ? (
+                                    <span className='item-details-rating-pill' style={{ color }}>
+                                        <Star size={14} fill={color} stroke={color} />
+                                        <span className='item-details-rating-value'>{userRating.toFixed(1)}</span>
+                                    </span>
+                                ) : (
+                                    <span className='item-details-rating-cta' style={{ color }}>{rateLabel}</span>
+                                )}
+                            </button>
+                        </div>
+                    </section>
+
                     {(collectionType === 'movie' || collectionType === 'tv') && (
                         <section className='item-details-section'>
                             <h2 className='item-details-section-title'>Stream</h2>
@@ -555,22 +576,6 @@ const ItemDetails = () => {
                                     </button>
                                 </div>
                             </div>
-                            <button
-                                type='button'
-                                className='item-details-rating-row'
-                                onClick={() => setRatingDialogOpen(true)}
-                                aria-label={userRating != null ? `Edit your rating, currently ${userRating.toFixed(1)} out of 10` : rateLabel}
-                            >
-                                <span className='item-details-row-label'>Your Rating</span>
-                                {userRating != null ? (
-                                    <span className='item-details-rating-pill' style={{ color }}>
-                                        <Star size={14} fill={color} stroke={color} />
-                                        <span className='item-details-rating-value'>{userRating.toFixed(1)}</span>
-                                    </span>
-                                ) : (
-                                    <span className='item-details-rating-cta' style={{ color }}>{rateLabel}</span>
-                                )}
-                            </button>
                         </div>
                     </section>
 
