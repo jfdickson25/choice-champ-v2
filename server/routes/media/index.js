@@ -792,9 +792,14 @@ router
                         if(minRating > 0) {
                             params.set('vote_average.gte', String(minRating));
                             // Without a vote_count floor, /discover surfaces
-                            // long-tail titles with one perfect rating —
-                            // hide those behind a reasonable threshold.
-                            params.set('vote_count.gte', sort === 'rating' ? '200' : '50');
+                            // niche long-tail titles with a tiny number of
+                            // superfan ratings averaging high — the user
+                            // doesn't want "5 friends rated this 9.0."
+                            // 200 floor when sort = rating (we're explicitly
+                            // ordering by rating so the floor needs to be
+                            // robust); 100 otherwise. Tune up if obscure
+                            // titles keep slipping through.
+                            params.set('vote_count.gte', sort === 'rating' ? '200' : '100');
                         }
                         if(yearFrom) params.set(`${dateField}.gte`, `${yearFrom}-01-01`);
                         if(yearTo)   params.set(`${dateField}.lte`, `${yearTo}-12-31`);
@@ -821,7 +826,14 @@ router
                             results = results.filter(it => Array.isArray(it.genre_ids) && it.genre_ids.some(g => wanted.has(g)));
                         }
                         if(minRating > 0) {
-                            results = results.filter(it => (it.vote_average || 0) >= minRating);
+                            // Same vote_count floor as the discover path
+                            // applies to the post-fetch text-search filter
+                            // — niche titles with few votes shouldn't
+                            // dominate "high-rating" results.
+                            results = results.filter(it =>
+                                (it.vote_average || 0) >= minRating
+                                && (it.vote_count || 0) >= 100
+                            );
                         }
                         if(yearFrom || yearTo) {
                             const lo = yearFrom || 0;
