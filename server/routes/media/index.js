@@ -748,32 +748,99 @@ router
         try {
             if(type === 'movie' || type === 'tv') {
                 if(feed === 'search') {
-                    const q = req.query.q || '';
-                    if(!q.trim()) {
+                    const q = (req.query.q || '').trim();
+                    // Advanced Search filters — all optional. When any is
+                    // present, the route either layers them onto a
+                    // text-search response (post-fetch) or uses TMDB's
+                    // /discover endpoint when there's no keyword.
+                    const genres = (req.query.genres || '').trim();
+                    const minRating = parseFloat(req.query.min_rating) || 0;
+                    const yearFrom = parseInt(req.query.year_from, 10) || null;
+                    const yearTo   = parseInt(req.query.year_to, 10) || null;
+                    const sort     = (req.query.sort || '').trim();
+                    const hasFilters = genres || minRating > 0 || yearFrom || yearTo || sort;
+
+                    if(!q && !hasFilters) {
                         return res.send({ results: [], page: 1, totalPages: 1 });
                     }
-                    const tmdbRes = await fetch(`https://api.themoviedb.org/3/search/${type}?api_key=${process.env.MOVIE_DB_API_KEY}&query=${encodeURIComponent(q)}&include_adult=false&page=${page}`);
+
+                    const tmdbKey = process.env.MOVIE_DB_API_KEY;
+                    const dateField = type === 'movie' ? 'primary_release_date' : 'first_air_date';
+                    const releaseField = type === 'movie' ? 'release_date' : 'first_air_date';
+                    const titleField = type === 'movie' ? 'title' : 'name';
+
+                    let url;
+                    if(q) {
+                        // Text search — fuzzy keyword via /search. Filters
+                        // are applied post-fetch since TMDB /search doesn't
+                        // accept genre/rating/year params.
+                        url = `https://api.themoviedb.org/3/search/${type}?api_key=${tmdbKey}&query=${encodeURIComponent(q)}&include_adult=false&page=${page}`;
+                    } else {
+                        // Filters only — /discover natively supports the
+                        // full filter set for sorting + pagination.
+                        const params = new URLSearchParams({
+                            api_key: tmdbKey,
+                            include_adult: 'false',
+                            language: 'en-US',
+                            page: String(page),
+                        });
+                        if(genres) params.set('with_genres', genres);
+                        if(minRating > 0) {
+                            params.set('vote_average.gte', String(minRating));
+                            // Without a vote_count floor, /discover surfaces
+                            // long-tail titles with one perfect rating —
+                            // hide those behind a reasonable threshold.
+                            params.set('vote_count.gte', sort === 'rating' ? '200' : '50');
+                        }
+                        if(yearFrom) params.set(`${dateField}.gte`, `${yearFrom}-01-01`);
+                        if(yearTo)   params.set(`${dateField}.lte`, `${yearTo}-12-31`);
+                        const sortMap = {
+                            popularity: 'popularity.desc',
+                            rating: 'vote_average.desc',
+                            newest: `${dateField}.desc`,
+                        };
+                        params.set('sort_by', sortMap[sort] || sortMap.popularity);
+                        url = `https://api.themoviedb.org/3/discover/${type}?${params}`;
+                    }
+
+                    const tmdbRes = await fetch(url);
                     const data = await tmdbRes.json();
 
-                    // TMDB's `include_adult=false` only filters its
-                    // dedicated adult flag (porn). Plenty of softcore /
-                    // explicit-titled stuff sits below that flag, so
-                    // we apply the same title-keyword block list used
-                    // by Books and Games as a second layer.
-                    const results = (data.results || [])
-                        .filter(item => !hasExplicitTitleWord(type === 'movie' ? item.title : item.name))
-                        .map(item => ({
-                            id: item.id,
-                            title: type === 'movie' ? item.title : item.name,
-                            poster: item.poster_path ? `https://image.tmdb.org/t/p/w342${item.poster_path}` : null,
-                            rating: item.vote_average,
-                            releaseDate: type === 'movie' ? item.release_date : item.first_air_date
-                        }));
+                    let results = (data.results || [])
+                        .filter(item => !hasExplicitTitleWord(item[titleField]));
+
+                    // Post-fetch filtering when text + filters are both
+                    // present (TMDB /search ignores the discover params).
+                    if(q && hasFilters) {
+                        if(genres) {
+                            const wanted = new Set(genres.split(',').map(s => parseInt(s.trim(), 10)).filter(Boolean));
+                            results = results.filter(it => Array.isArray(it.genre_ids) && it.genre_ids.some(g => wanted.has(g)));
+                        }
+                        if(minRating > 0) {
+                            results = results.filter(it => (it.vote_average || 0) >= minRating);
+                        }
+                        if(yearFrom || yearTo) {
+                            const lo = yearFrom || 0;
+                            const hi = yearTo   || 9999;
+                            results = results.filter(it => {
+                                const y = parseInt((it[releaseField] || '').slice(0, 4), 10);
+                                return y && y >= lo && y <= hi;
+                            });
+                        }
+                    }
+
+                    const mapped = results.map(item => ({
+                        id: item.id,
+                        title: item[titleField],
+                        poster: item.poster_path ? `https://image.tmdb.org/t/p/w342${item.poster_path}` : null,
+                        rating: item.vote_average,
+                        releaseDate: item[releaseField],
+                    }));
 
                     return res.send({
-                        results,
+                        results: mapped,
                         page: data.page || page,
-                        totalPages: data.total_pages || 1
+                        totalPages: data.total_pages || 1,
                     });
                 }
 
@@ -851,10 +918,22 @@ router
                 };
 
                 if(feed === 'search') {
-                    const q = req.query.q || '';
-                    if(!q.trim()) {
+                    const q = (req.query.q || '').trim();
+                    // Advanced Search filters for games. RAWG accepts
+                    // genres, publishers, dates, metacritic, ordering
+                    // alongside `search`, so we just bolt them on.
+                    const genres     = (req.query.genres || '').trim();
+                    const publisher  = (req.query.publisher || '').trim();
+                    const minRating  = parseInt(req.query.min_rating, 10) || 0; // Metacritic 0-100
+                    const yearFrom   = parseInt(req.query.year_from, 10) || null;
+                    const yearTo     = parseInt(req.query.year_to, 10) || null;
+                    const sort       = (req.query.sort || '').trim();
+                    const hasFilters = genres || publisher || minRating > 0 || yearFrom || yearTo || sort;
+
+                    if(!q && !hasFilters) {
                         return res.send({ results: [], page: 1, totalPages: 1 });
                     }
+
                     // Fetch a wider candidate pool (40 — RAWG's max page
                     // size) so the local re-rank below has more title
                     // matches to surface. Drop ordering=-added so RAWG's
@@ -864,7 +943,25 @@ router
                     // off the page entirely; the local rerank handles
                     // fuzzy noise just fine.
                     const candidatePoolSize = 40;
-                    const rawgRes = await fetch(`https://api.rawg.io/api/games?key=${process.env.RAWG_API_KEY}&search=${encodeURIComponent(q)}${platformParam}&page=1&page_size=${candidatePoolSize}`);
+                    const filterParams = new URLSearchParams();
+                    if(genres) filterParams.set('genres', genres);
+                    if(publisher) filterParams.set('publishers', publisher);
+                    if(minRating > 0) filterParams.set('metacritic', `${minRating},100`);
+                    if(yearFrom || yearTo) {
+                        const lo = yearFrom ? `${yearFrom}-01-01` : '1900-01-01';
+                        const hi = yearTo   ? `${yearTo}-12-31`   : '2099-12-31';
+                        filterParams.set('dates', `${lo},${hi}`);
+                    }
+                    const sortMap = {
+                        popularity: '-added',
+                        rating: '-rating',
+                        newest: '-released',
+                    };
+                    if(sort && sortMap[sort]) filterParams.set('ordering', sortMap[sort]);
+                    const filterStr = filterParams.toString();
+                    const filterParam = filterStr ? `&${filterStr}` : '';
+                    const searchParam = q ? `&search=${encodeURIComponent(q)}` : '';
+                    const rawgRes = await fetch(`https://api.rawg.io/api/games?key=${process.env.RAWG_API_KEY}${searchParam}${platformParam}${filterParam}&page=1&page_size=${candidatePoolSize}`);
                     const data = await rawgRes.json();
 
                     const safeItems = (data.results || [])
@@ -878,39 +975,32 @@ router
                         releaseDate: item.released
                     }));
 
-                    // Re-rank by how closely each title matches the query.
-                    // Note this is intentionally one tier looser than the
-                    // board-game search: exact match and starts-with are
-                    // bucketed together so that for a series, the newest
-                    // entry wins regardless of whether it's titled exactly
-                    // "Animal Crossing" or "Animal Crossing: New Horizons".
-                    // (Board games keep them separate because the "exact"
-                    // hit is usually the base game, which you want before
-                    // its expansions.)
-                    const queryLower = q.trim().toLowerCase();
-                    const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                    const wholeWordRe = new RegExp(`\\b${escapeRe(queryLower)}\\b`);
-                    const rankMatch = (title) => {
-                        const t = (title || '').toLowerCase();
-                        if (t.startsWith(queryLower)) return 0;   // exact + starts-with
-                        if (wholeWordRe.test(t)) return 1;        // whole-word
-                        if (t.includes(queryLower)) return 2;     // contains
-                        return 3;                                  // RAWG fuzzy hit
-                    };
-                    // Within the same tier, prefer newer releases — for
-                    // "Animal Crossing" the user wants New Horizons (2020)
-                    // before Wild World (2005). Missing release dates sort
-                    // last within their tier. Falls back to RAWG's order
-                    // (popularity) for items without dates.
-                    const releaseTimestamp = (r) => {
-                        if (!r.releaseDate) return -Infinity;
-                        const t = Date.parse(r.releaseDate);
-                        return Number.isFinite(t) ? t : -Infinity;
-                    };
-                    const ranked = results
-                        .map((r, i) => ({ r, i, tier: rankMatch(r.title), ts: releaseTimestamp(r) }))
-                        .sort((a, b) => (a.tier - b.tier) || (b.ts - a.ts) || (a.i - b.i))
-                        .map(({ r }) => r);
+                    // Re-rank by title relevance only when there's a
+                    // keyword. With filters alone, respect whatever
+                    // ordering RAWG returned (which honors the
+                    // user-selected sort).
+                    let ranked = results;
+                    if(q) {
+                        const queryLower = q.toLowerCase();
+                        const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                        const wholeWordRe = new RegExp(`\\b${escapeRe(queryLower)}\\b`);
+                        const rankMatch = (title) => {
+                            const t = (title || '').toLowerCase();
+                            if (t.startsWith(queryLower)) return 0;   // exact + starts-with
+                            if (wholeWordRe.test(t)) return 1;        // whole-word
+                            if (t.includes(queryLower)) return 2;     // contains
+                            return 3;                                  // RAWG fuzzy hit
+                        };
+                        const releaseTimestamp = (r) => {
+                            if (!r.releaseDate) return -Infinity;
+                            const t = Date.parse(r.releaseDate);
+                            return Number.isFinite(t) ? t : -Infinity;
+                        };
+                        ranked = results
+                            .map((r, i) => ({ r, i, tier: rankMatch(r.title), ts: releaseTimestamp(r) }))
+                            .sort((a, b) => (a.tier - b.tier) || (b.ts - a.ts) || (a.i - b.i))
+                            .map(({ r }) => r);
+                    }
 
                     return res.send({
                         results: ranked,
@@ -1116,24 +1206,61 @@ router
                 });
             } else if(type === 'book') {
                 if(feed === 'search') {
-                    const q = req.query.q || '';
-                    if(!q.trim()) {
+                    const q      = (req.query.q || '').trim();
+                    // Advanced Search filters for books. iTunes natively
+                    // supports authorTerm via the attribute param; year +
+                    // rating get post-fetch filtering since the iTunes
+                    // search API doesn't accept them.
+                    const author    = (req.query.author || '').trim();
+                    const yearFrom  = parseInt(req.query.year_from, 10) || null;
+                    const yearTo    = parseInt(req.query.year_to, 10) || null;
+                    const minRating = parseFloat(req.query.min_rating) || 0; // 1-5 scale
+                    const hasFilters = author || yearFrom || yearTo || minRating > 0;
+
+                    if(!q && !hasFilters) {
                         return res.send({ results: [], page: 1, totalPages: 1 });
                     }
-                    // iTunes title-attribute search returns a tighter
-                    // candidate set than the default term search (which
-                    // also matches descriptions / publisher copy). Then
-                    // rank by title-relevance with reviews as the tie-
-                    // breaker so a specific query like "Wind and Truth"
-                    // surfaces THAT title above more-popular siblings.
-                    const url = `https://itunes.apple.com/search?media=ebook&attribute=titleTerm&term=${encodeURIComponent(q)}&limit=50&country=US`;
+
+                    // Pick the most-targeted iTunes attribute. Author
+                    // search returns better candidates than free-text
+                    // term when the user is filtering specifically on
+                    // an author. Title takes priority when both are set.
+                    let url;
+                    if(q) {
+                        url = `https://itunes.apple.com/search?media=ebook&attribute=titleTerm&term=${encodeURIComponent(q)}&limit=50&country=US`;
+                    } else if(author) {
+                        url = `https://itunes.apple.com/search?media=ebook&attribute=authorTerm&term=${encodeURIComponent(author)}&limit=50&country=US`;
+                    } else {
+                        // Filters without text or author — fall back to a
+                        // broad-term search seeded with a likely word so
+                        // iTunes returns something to filter against.
+                        url = `https://itunes.apple.com/search?media=ebook&term=${encodeURIComponent('book')}&limit=50&country=US`;
+                    }
                     const r = await fetch(url);
                     if(!r.ok) {
                         return res.status(502).send({ errMsg: `iTunes search ${r.status}` });
                     }
                     const data = await r.json();
-                    const items = (data.results || []).filter(looksLikeITunesBook);
-                    const ranked = rankBookSearchResults(q, items);
+                    let items = (data.results || []).filter(looksLikeITunesBook);
+
+                    // Post-fetch filters
+                    if(q && author) {
+                        const authorLower = author.toLowerCase();
+                        items = items.filter(it => (it.artistName || '').toLowerCase().includes(authorLower));
+                    }
+                    if(yearFrom || yearTo) {
+                        const lo = yearFrom || 0;
+                        const hi = yearTo   || 9999;
+                        items = items.filter(it => {
+                            const y = parseInt((it.releaseDate || '').slice(0, 4), 10);
+                            return y && y >= lo && y <= hi;
+                        });
+                    }
+                    if(minRating > 0) {
+                        items = items.filter(it => (Number(it.averageUserRating) || 0) >= minRating);
+                    }
+
+                    const ranked = q ? rankBookSearchResults(q, items) : items;
                     const results = ranked.map(iTunesItemToResult);
                     return res.send({ results, page: 1, totalPages: 1 });
                 }
