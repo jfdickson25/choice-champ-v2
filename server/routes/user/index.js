@@ -8,6 +8,27 @@ const { requireAuth } = require('../../middleware/auth');
 // auth.users row. The handle_new_user DB trigger mirrors it into profiles.
 // Sign-in / sign-up / password management happen frontend-direct via supabase-js.
 
+// Page through a Supabase query in 1000-row chunks. PostgREST applies a
+// default 1000-row cap per response, so a single .in() select against
+// collection_items silently truncates once a power user crosses that
+// threshold — which manifested as some collections showing as empty in
+// the Profile / Progress stats. `buildQuery` rebuilds the query each
+// loop because supabase-js builders aren't reusable across awaits.
+async function fetchAllPaged(buildQuery) {
+    const PAGE = 1000;
+    const all = [];
+    let from = 0;
+    for (;;) {
+        const { data, error } = await buildQuery().range(from, from + PAGE - 1);
+        if (error) return { data: null, error };
+        if (!data || data.length === 0) break;
+        all.push(...data);
+        if (data.length < PAGE) break;
+        from += PAGE;
+    }
+    return { data: all, error: null };
+}
+
 router
     // GET /user/me — current user's profile, collection counts, and a
     // per-collection progress breakdown so the Profile page can show
@@ -45,10 +66,12 @@ router
 
         if (collections.length > 0) {
             const ids = collections.map(c => c.id);
-            const { data: items, error: itemsErr } = await supabase
-                .from('collection_items')
-                .select('collection_id, complete')
-                .in('collection_id', ids);
+            const { data: items, error: itemsErr } = await fetchAllPaged(() =>
+                supabase
+                    .from('collection_items')
+                    .select('collection_id, complete')
+                    .in('collection_id', ids)
+            );
             if (itemsErr) return res.status(500).json({ errMsg: itemsErr.message });
 
             const byId = new Map(collections.map(c => [c.id, c]));
@@ -114,20 +137,25 @@ router
                 { data: items, error: itemsErr },
                 { data: watched, error: watchedErr },
             ] = await Promise.all([
-                supabase
-                    .from('collection_items')
-                    .select('id, collection_id, title, poster, complete, item_id')
-                    .in('collection_id', ids),
+                fetchAllPaged(() =>
+                    supabase
+                        .from('collection_items')
+                        .select('id, collection_id, title, poster, complete, item_id')
+                        .in('collection_id', ids)
+                ),
                 // Per-user personal completion flags. Independent from
                 // collection_items.complete (the shared/group flag) so we
                 // can render a "Group / You" toggle that flips the lens
-                // without re-fetching.
-                supabase
-                    .from('watched_media')
-                    .select('item_id')
-                    .eq('user_id', userId)
-                    .eq('media_type', type)
-                    .eq('completed', true),
+                // without re-fetching. Paged in case a heavy user has a
+                // huge personal watch history.
+                fetchAllPaged(() =>
+                    supabase
+                        .from('watched_media')
+                        .select('item_id')
+                        .eq('user_id', userId)
+                        .eq('media_type', type)
+                        .eq('completed', true)
+                ),
             ]);
             if (itemsErr) return res.status(500).json({ errMsg: itemsErr.message });
             if (watchedErr) return res.status(500).json({ errMsg: watchedErr.message });
