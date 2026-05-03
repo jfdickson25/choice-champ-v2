@@ -51,9 +51,25 @@ export async function fetchDiscover(type, feed, page = 1, { platform } = {}) {
     return handleDiscoverResponse(res);
 }
 
-export async function fetchSearch(type, query, page = 1, { platform } = {}) {
-    const platformParam = platform && platform !== 'all' ? `&platform=${platform}` : '';
-    const res = await fetch(`${BACKEND_URL}/media/discover/${type}/search?q=${encodeURIComponent(query)}&page=${page}${platformParam}`);
+// `filters` (optional): Advanced Search params. Shape:
+//   { genres: number[]|string[], minRating, yearFrom, yearTo,
+//     author, publisher, sort: 'popularity'|'rating'|'newest' }
+// Each field is conditionally appended; the backend ignores empties.
+export async function fetchSearch(type, query, page = 1, { platform, filters } = {}) {
+    const params = new URLSearchParams();
+    if (query) params.set('q', query);
+    params.set('page', String(page));
+    if (platform && platform !== 'all') params.set('platform', platform);
+    if (filters) {
+        if (filters.genres?.length) params.set('genres', filters.genres.join(','));
+        if (filters.minRating) params.set('min_rating', String(filters.minRating));
+        if (filters.yearFrom) params.set('year_from', String(filters.yearFrom));
+        if (filters.yearTo)   params.set('year_to',   String(filters.yearTo));
+        if (filters.author)    params.set('author',    filters.author);
+        if (filters.publisher) params.set('publisher', filters.publisher);
+        if (filters.sort)      params.set('sort',      filters.sort);
+    }
+    const res = await fetch(`${BACKEND_URL}/media/discover/${type}/search?${params}`);
     return handleDiscoverResponse(res);
 }
 

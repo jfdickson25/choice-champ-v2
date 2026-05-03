@@ -82,6 +82,66 @@
     white-space: nowrap;
 }
 
+/* Advanced filters trigger sandwiched between the search input and
+   the Cancel button. A small dot in the active media color overlays
+   the icon when any filter is on. */
+.discover-search-advanced {
+    flex-shrink: 0;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: background-color 150ms ease-out;
+}
+
+.discover-search-advanced:hover {
+    background-color: var(--cc-elevation-low);
+}
+
+.discover-search-advanced-dot {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    box-shadow: 0 0 0 2px var(--cc-bg);
+}
+
+/* Removable chips showing the user's active Advanced Search filters,
+   sits just under the search bar. Tap a chip to clear that filter. */
+.discover-active-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px 0 4px 0;
+}
+
+.discover-active-filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background-color: transparent;
+    border: 1px solid var(--cc-border-strong);
+    font-family: inherit;
+    font-size: 9.5pt;
+    font-weight: 500;
+    cursor: pointer;
+    transition: filter 150ms ease-out;
+}
+
+.discover-active-filter-chip:hover {
+    filter: brightness(1.1);
+}
+
 /* Poster grid — column count is set inline via viewValue */
 .discover-grid {
     display: grid;

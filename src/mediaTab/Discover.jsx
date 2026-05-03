@@ -1,12 +1,18 @@
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
-import { Columns2, Columns3, Columns4, Search as SearchIcon, SlidersHorizontal, X } from 'lucide-react';
+import { Columns2, Columns3, Columns4, Search as SearchIcon, SlidersHorizontal, X, Filter } from 'lucide-react';
 
 import { SUBTABS, fetchDiscover, fetchSearch, fetchGamePosters } from './discoverApi';
 import SortFilterPanel from '../shared/components/SortFilterPanel/SortFilterPanel';
+import AdvancedSearchSheet, { EMPTY_FILTERS, filtersAreEmpty } from './components/AdvancedSearchSheet/AdvancedSearchSheet';
+import { GENRES_FOR_TYPE, SORT_OPTIONS_FOR_TYPE } from './components/AdvancedSearchSheet/genres';
 import { AuthContext } from '../shared/context/auth-context';
 import Loading from '../shared/components/Loading';
 import './Discover.css';
+
+// Phase 1 Advanced Search: covers movie / tv / game / book.
+// Board games stay on plain keyword search until phase 2.
+const ADVANCED_SEARCH_TYPES = new Set(['movie', 'tv', 'game', 'book']);
 
 const SUPPORTED_TYPES = ['movie', 'tv', 'game', 'board', 'book'];
 
@@ -51,6 +57,10 @@ const DiscoverFeed = ({ collectionType, color, onSearchingChange }) => {
     const [error, setError] = useState(null);
     const [filterAnchor, setFilterAnchor] = useState(null);
     const [searchModeActive, setSearchModeActive] = useState(urlQuery.length > 0);
+    const [advancedOpen, setAdvancedOpen] = useState(false);
+    const [activeFilters, setActiveFilters] = useState(EMPTY_FILTERS);
+    const filtersOn = !filtersAreEmpty(activeFilters);
+    const supportsAdvanced = ADVANCED_SEARCH_TYPES.has(collectionType);
     const [viewValue, setViewValue] = useState(() => {
         const saved = localStorage.getItem(viewKey);
         const parsed = saved ? parseInt(saved, 10) : 2;
@@ -100,7 +110,9 @@ const DiscoverFeed = ({ collectionType, color, onSearchingChange }) => {
     // Require at least 2 chars before hitting the search APIs. A single
     // letter matches thousands of irrelevant titles and burns a request
     // against RAWG / BGG / TMDB free-tier quotas for no real value.
-    const isSearching = trimmedQuery.length >= 2;
+    // Filters-only also counts as searching — Advanced Search lets the
+    // user discover by genre/year/rating without typing anything.
+    const isSearching = trimmedQuery.length >= 2 || filtersOn;
     const hasMultipleSubtabs = subtabs.length > 1;
 
     useEffect(() => {
@@ -137,7 +149,7 @@ const DiscoverFeed = ({ collectionType, color, onSearchingChange }) => {
         setError(null);
 
         const request = isSearching
-            ? fetchSearch(collectionType, trimmedQuery, 1, { platform })
+            ? fetchSearch(collectionType, trimmedQuery, 1, { platform, filters: activeFilters })
             : fetchDiscover(collectionType, activeSubtab, 1, { platform });
 
         request
@@ -176,7 +188,7 @@ const DiscoverFeed = ({ collectionType, color, onSearchingChange }) => {
             });
 
         return () => { cancelled = true; };
-    }, [activeSubtab, collectionType, trimmedQuery, isSearching, searchModeActive, platform]);
+    }, [activeSubtab, collectionType, trimmedQuery, isSearching, searchModeActive, platform, activeFilters]);
 
     const openItem = (item) => {
         const search = item.poster
@@ -194,6 +206,11 @@ const DiscoverFeed = ({ collectionType, color, onSearchingChange }) => {
     const exitSearch = () => {
         setSearchModeActive(false);
         setQuery('');
+        // Wipe any Advanced Search filters when leaving search mode —
+        // Advanced Search is a one-off "find me a thing" tool, not a
+        // sticky preference. Saves users from confused empty-result
+        // grids when they open search again later.
+        setActiveFilters(EMPTY_FILTERS);
         inputRef.current?.blur();
     };
 
@@ -256,6 +273,18 @@ const DiscoverFeed = ({ collectionType, color, onSearchingChange }) => {
                             </button>
                         )}
                     </div>
+                    {supportsAdvanced && (
+                        <button
+                            type='button'
+                            className='discover-search-advanced'
+                            onClick={() => setAdvancedOpen(true)}
+                            aria-label='Advanced filters'
+                            style={{ color }}
+                        >
+                            <SlidersHorizontal size={20} strokeWidth={2} />
+                            {filtersOn && <span className='discover-search-advanced-dot' style={{ backgroundColor: color }} />}
+                        </button>
+                    )}
                     <button
                         type='button'
                         className='discover-search-cancel'
@@ -265,6 +294,27 @@ const DiscoverFeed = ({ collectionType, color, onSearchingChange }) => {
                         Cancel
                     </button>
                 </div>
+            )}
+
+            {searchModeActive && filtersOn && (
+                <ActiveFilterChips
+                    filters={activeFilters}
+                    mediaType={collectionType}
+                    color={color}
+                    onChange={setActiveFilters}
+                />
+            )}
+
+            {supportsAdvanced && (
+                <AdvancedSearchSheet
+                    open={advancedOpen}
+                    onClose={() => setAdvancedOpen(false)}
+                    onApply={(f) => { setActiveFilters(f); setAdvancedOpen(false); }}
+                    onReset={() => { setActiveFilters(EMPTY_FILTERS); setAdvancedOpen(false); }}
+                    mediaType={collectionType}
+                    color={color}
+                    initialFilters={activeFilters}
+                />
             )}
 
             {!searchModeActive && (
@@ -359,6 +409,75 @@ const DiscoverError = ({ error }) => (
         </p>
     </div>
 );
+
+// Strip of removable chips showing the user's active Advanced Search
+// filters. Tapping the X on a chip clears just that filter and the
+// search re-runs against the remaining ones.
+const ActiveFilterChips = ({ filters, mediaType, color, onChange }) => {
+    const genreList = GENRES_FOR_TYPE[mediaType] || [];
+    const sortOpts  = SORT_OPTIONS_FOR_TYPE[mediaType] || [];
+    const labelForGenre = (id) => genreList.find(g => g.id === id)?.label || String(id);
+    const labelForSort  = (v)  => sortOpts.find(s => s.value === v)?.label || v;
+    const chips = [];
+
+    if (filters.author) {
+        chips.push({ key: 'author', text: `By ${filters.author}`, clear: () => onChange({ ...filters, author: '' }) });
+    }
+    if (filters.publisher) {
+        chips.push({ key: 'publisher', text: filters.publisher, clear: () => onChange({ ...filters, publisher: '' }) });
+    }
+    (filters.genres || []).forEach(id => {
+        chips.push({
+            key: `genre-${id}`,
+            text: labelForGenre(id),
+            clear: () => onChange({ ...filters, genres: filters.genres.filter(g => g !== id) }),
+        });
+    });
+    if (filters.minRating > 0) {
+        chips.push({
+            key: 'min-rating',
+            text: `Rating ≥ ${filters.minRating}`,
+            clear: () => onChange({ ...filters, minRating: 0 }),
+        });
+    }
+    if (filters.yearFrom || filters.yearTo) {
+        const lo = filters.yearFrom || '';
+        const hi = filters.yearTo   || '';
+        const text = lo && hi ? `${lo}–${hi}` : lo ? `From ${lo}` : `Until ${hi}`;
+        chips.push({
+            key: 'year',
+            text,
+            clear: () => onChange({ ...filters, yearFrom: '', yearTo: '' }),
+        });
+    }
+    if (filters.sort) {
+        chips.push({
+            key: 'sort',
+            text: `Sort: ${labelForSort(filters.sort)}`,
+            clear: () => onChange({ ...filters, sort: '' }),
+        });
+    }
+
+    if (chips.length === 0) return null;
+
+    return (
+        <div className='discover-active-filters'>
+            {chips.map(c => (
+                <button
+                    key={c.key}
+                    type='button'
+                    className='discover-active-filter-chip'
+                    onClick={c.clear}
+                    style={{ borderColor: color, color }}
+                    aria-label={`Remove filter: ${c.text}`}
+                >
+                    <span>{c.text}</span>
+                    <X size={12} strokeWidth={2.5} />
+                </button>
+            ))}
+        </div>
+    );
+};
 
 const ComingSoon = ({ collectionType, color }) => {
     const label = collectionType === 'game' ? 'video games' : collectionType;
