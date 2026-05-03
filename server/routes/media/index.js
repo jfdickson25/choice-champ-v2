@@ -62,6 +62,39 @@ function looksLikeRawgGame(item) {
     return true;
 }
 
+// Drop low-engagement RAWG noise from search results. RAWG indexes
+// thousands of itch.io / amateur jam games that bury legit hits —
+// e.g., a search for "limbo" returns a couple dozen "Limbo (itch)" /
+// "Limbo Train" / "Limbo Cat" entries with zero adds, zero ratings,
+// and itch as their only store. Real games consistently have non-
+// trivial `added` (RAWG's user-list popularity) and/or ratings_count.
+//
+// Applied only at the search call site. Discover feeds (popular /
+// top_rated / new / upcoming) rely on RAWG's own sorting and a
+// blanket engagement floor there would drop legit upcoming releases
+// that haven't accumulated adds yet.
+function hasRealRawgEngagement(item) {
+    const added = Number(item?.added) || 0;
+    const ratingsCount = Number(item?.ratings_count) || 0;
+
+    // No engagement at all → garbage.
+    if (added === 0 && ratingsCount === 0) return false;
+
+    const stores = Array.isArray(item?.stores) ? item.stores : [];
+    const isItchStore = (s) => s?.store?.slug === 'itch' || s?.store?.name === 'itch.io';
+    const onlyItch = stores.length > 0 && stores.every(isItchStore);
+    const noStores = stores.length === 0;
+
+    // Itch-only or no-store releases need at least a couple of
+    // ratings to count as real — those are usually amateur jams.
+    if ((onlyItch || noStores) && ratingsCount === 0) return false;
+
+    // Final safety net: very few adds and zero ratings = noise.
+    if (added < 10 && ratingsCount === 0) return false;
+
+    return true;
+}
+
 async function getSgdbPoster(rawgId, title) {
     if(!rawgId || !title) return null;
 
@@ -832,7 +865,9 @@ router
                     const rawgRes = await fetch(`https://api.rawg.io/api/games?key=${process.env.RAWG_API_KEY}&search=${encodeURIComponent(q)}${platformParam}&page=1&page_size=${candidatePoolSize}`);
                     const data = await rawgRes.json();
 
-                    const safeItems = (data.results || []).filter(looksLikeRawgGame);
+                    const safeItems = (data.results || [])
+                        .filter(looksLikeRawgGame)
+                        .filter(hasRealRawgEngagement);
                     const results = dedupeEditions(safeItems).map(item => ({
                         id: item.id,
                         title: item.name,
