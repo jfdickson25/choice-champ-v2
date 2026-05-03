@@ -85,11 +85,13 @@ function hasRealRawgEngagement(item) {
     const onlyItch = stores.length > 0 && stores.every(isItchStore);
     const noStores = stores.length === 0;
 
-    // Itch-only or no-store releases need at least a couple of
-    // ratings to count as real — those are usually amateur jams.
-    if ((onlyItch || noStores) && ratingsCount === 0) return false;
+    // Itch-only or no-store releases need real-people popularity.
+    // Self-uploads ("Inside Scoop v0.0.1": 1 add, 1 rating, itch only)
+    // were sneaking through the prior "needs >0 ratings" rule, so
+    // require either ≥10 adds OR ≥3 ratings to count as legit.
+    if ((onlyItch || noStores) && added < 10 && ratingsCount < 3) return false;
 
-    // Final safety net: very few adds and zero ratings = noise.
+    // Multi-store but tiny + zero ratings = orphan listing.
     if (added < 10 && ratingsCount === 0) return false;
 
     return true;
