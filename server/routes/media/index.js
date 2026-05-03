@@ -784,7 +784,11 @@ router
                             language: 'en-US',
                             page: String(page),
                         });
-                        if(genres) params.set('with_genres', genres);
+                        // TMDB joins comma-separated ids as AND but pipe
+                        // as OR. Advanced Search picks "any selected
+                        // genre" semantics, so map our comma list to a
+                        // pipe-joined value before sending.
+                        if(genres) params.set('with_genres', genres.replace(/,/g, '|'));
                         if(minRating > 0) {
                             params.set('vote_average.gte', String(minRating));
                             // Without a vote_count floor, /discover surfaces
@@ -1208,14 +1212,16 @@ router
                 if(feed === 'search') {
                     const q      = (req.query.q || '').trim();
                     // Advanced Search filters for books. iTunes natively
-                    // supports authorTerm via the attribute param; year +
-                    // rating get post-fetch filtering since the iTunes
-                    // search API doesn't accept them.
+                    // supports authorTerm via the attribute param; genres,
+                    // year, and rating all get post-fetch filtering since
+                    // the iTunes search API can only target one attribute
+                    // per request and we want them composable.
                     const author    = (req.query.author || '').trim();
+                    const genres    = (req.query.genres || '').trim();
                     const yearFrom  = parseInt(req.query.year_from, 10) || null;
                     const yearTo    = parseInt(req.query.year_to, 10) || null;
                     const minRating = parseFloat(req.query.min_rating) || 0; // 1-5 scale
-                    const hasFilters = author || yearFrom || yearTo || minRating > 0;
+                    const hasFilters = author || genres || yearFrom || yearTo || minRating > 0;
 
                     if(!q && !hasFilters) {
                         return res.send({ results: [], page: 1, totalPages: 1 });
@@ -1224,16 +1230,24 @@ router
                     // Pick the most-targeted iTunes attribute. Author
                     // search returns better candidates than free-text
                     // term when the user is filtering specifically on
-                    // an author. Title takes priority when both are set.
+                    // an author. Title takes priority, then author,
+                    // then genre as the seed search.
                     let url;
                     if(q) {
                         url = `https://itunes.apple.com/search?media=ebook&attribute=titleTerm&term=${encodeURIComponent(q)}&limit=50&country=US`;
                     } else if(author) {
                         url = `https://itunes.apple.com/search?media=ebook&attribute=authorTerm&term=${encodeURIComponent(author)}&limit=50&country=US`;
+                    } else if(genres) {
+                        // Use the first selected genre as the seed via
+                        // genreIndex; remaining genres get applied as a
+                        // post-fetch OR filter below.
+                        const seed = genres.split(',')[0].trim();
+                        url = `https://itunes.apple.com/search?media=ebook&attribute=genreIndex&term=${encodeURIComponent(seed)}&limit=50&country=US`;
                     } else {
-                        // Filters without text or author — fall back to a
-                        // broad-term search seeded with a likely word so
-                        // iTunes returns something to filter against.
+                        // Filters without text, author, or genre — fall
+                        // back to a broad-term search seeded with a
+                        // likely word so iTunes returns something to
+                        // filter against.
                         url = `https://itunes.apple.com/search?media=ebook&term=${encodeURIComponent('book')}&limit=50&country=US`;
                     }
                     const r = await fetch(url);
@@ -1247,6 +1261,18 @@ router
                     if(q && author) {
                         const authorLower = author.toLowerCase();
                         items = items.filter(it => (it.artistName || '').toLowerCase().includes(authorLower));
+                    }
+                    if(genres) {
+                        // OR semantics — matches any selected genre.
+                        // Match case-insensitively + by substring so
+                        // "Sci-Fi & Fantasy" still matches when iTunes
+                        // tags an item with the longer "Science Fiction
+                        // & Fantasy" wording.
+                        const wanted = genres.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+                        items = items.filter(it => {
+                            const itemGenres = (it.genres || []).map(g => String(g).toLowerCase());
+                            return itemGenres.some(g => wanted.some(w => g.includes(w) || w.includes(g)));
+                        });
                     }
                     if(yearFrom || yearTo) {
                         const lo = yearFrom || 0;
