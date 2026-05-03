@@ -791,15 +791,14 @@ router
                         if(genres) params.set('with_genres', genres.replace(/,/g, '|'));
                         if(minRating > 0) {
                             params.set('vote_average.gte', String(minRating));
-                            // Without a vote_count floor, /discover surfaces
-                            // niche long-tail titles with a tiny number of
-                            // superfan ratings averaging high — the user
-                            // doesn't want "5 friends rated this 9.0."
-                            // 200 floor when sort = rating (we're explicitly
-                            // ordering by rating so the floor needs to be
-                            // robust); 100 otherwise. Tune up if obscure
-                            // titles keep slipping through.
-                            params.set('vote_count.gte', sort === 'rating' ? '200' : '100');
+                            // 500-vote floor cleanly separates "broadly-
+                            // received" titles from niche long-tail with
+                            // inflated superfan averages. Tradeoff: legit
+                            // small-audience indies / foreign / catalog
+                            // re-releases under 500 votes drop out of
+                            // rating-filtered results too. Tune down to
+                            // ~200 if the search starts to feel sparse.
+                            params.set('vote_count.gte', '500');
                         }
                         if(yearFrom) params.set(`${dateField}.gte`, `${yearFrom}-01-01`);
                         if(yearTo)   params.set(`${dateField}.lte`, `${yearTo}-12-31`);
@@ -827,12 +826,10 @@ router
                         }
                         if(minRating > 0) {
                             // Same vote_count floor as the discover path
-                            // applies to the post-fetch text-search filter
-                            // — niche titles with few votes shouldn't
-                            // dominate "high-rating" results.
+                            // applies to the post-fetch text-search filter.
                             results = results.filter(it =>
                                 (it.vote_average || 0) >= minRating
-                                && (it.vote_count || 0) >= 100
+                                && (it.vote_count || 0) >= 500
                             );
                         }
                         if(yearFrom || yearTo) {
