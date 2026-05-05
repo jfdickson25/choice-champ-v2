@@ -56,9 +56,30 @@ const DiscoverFeed = ({ collectionType, color, onSearchingChange }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [filterAnchor, setFilterAnchor] = useState(null);
-    const [searchModeActive, setSearchModeActive] = useState(urlQuery.length > 0);
+    // Hydrate Advanced Search filters from URL params so navigating
+    // into ItemDetails and tapping back (or hitting the X-close after
+    // a deep similar/cast drill) restores the filtered grid the user
+    // had set up. Genre IDs are numeric for movie/tv (TMDB) and
+    // string-slug for game/book (RAWG/iTunes) — re-cast accordingly.
+    const initialFilters = (() => {
+        const rawGenres = (searchParams.get('genres') || '').split(',').filter(Boolean);
+        const isNumericGenre = collectionType === 'movie' || collectionType === 'tv';
+        const genres = isNumericGenre
+            ? rawGenres.map(g => parseInt(g, 10)).filter(Number.isFinite)
+            : rawGenres;
+        const minRating = parseFloat(searchParams.get('min_rating')) || 0;
+        const yearFrom  = searchParams.get('year_from') || '';
+        const yearTo    = searchParams.get('year_to')   || '';
+        const author    = searchParams.get('author')    || '';
+        const publisher = searchParams.get('publisher') || '';
+        const sort      = searchParams.get('sort')      || '';
+        const any = genres.length || minRating || yearFrom || yearTo || author || publisher || sort;
+        return any ? { genres, minRating, yearFrom, yearTo, author, publisher, sort } : EMPTY_FILTERS;
+    })();
+    const hasInitialFilters = !filtersAreEmpty(initialFilters);
+    const [searchModeActive, setSearchModeActive] = useState(urlQuery.length > 0 || hasInitialFilters);
     const [advancedOpen, setAdvancedOpen] = useState(false);
-    const [activeFilters, setActiveFilters] = useState(EMPTY_FILTERS);
+    const [activeFilters, setActiveFilters] = useState(initialFilters);
     const filtersOn = !filtersAreEmpty(activeFilters);
     const supportsAdvanced = ADVANCED_SEARCH_TYPES.has(collectionType);
     const [viewValue, setViewValue] = useState(() => {
@@ -128,10 +149,21 @@ const DiscoverFeed = ({ collectionType, color, onSearchingChange }) => {
         const next = new URLSearchParams(searchParams);
         if (activeSubtab === subtabs[0].key) next.delete('tab'); else next.set('tab', activeSubtab);
         if (trimmedQuery) next.set('q', trimmedQuery); else next.delete('q');
+        // Mirror Advanced Search filters into the URL too. Each empty
+        // value is dropped so the URL stays clean when the user clears
+        // filters one at a time via the chip strip.
+        const f = activeFilters || EMPTY_FILTERS;
+        if (f.genres && f.genres.length) next.set('genres', f.genres.join(',')); else next.delete('genres');
+        if (f.minRating)  next.set('min_rating', String(f.minRating));   else next.delete('min_rating');
+        if (f.yearFrom)   next.set('year_from',  String(f.yearFrom));    else next.delete('year_from');
+        if (f.yearTo)     next.set('year_to',    String(f.yearTo));      else next.delete('year_to');
+        if (f.author)     next.set('author',     f.author);              else next.delete('author');
+        if (f.publisher)  next.set('publisher',  f.publisher);           else next.delete('publisher');
+        if (f.sort)       next.set('sort',       f.sort);                else next.delete('sort');
         if (next.toString() !== searchParams.toString()) {
             setSearchParams(next, { replace: true });
         }
-    }, [activeSubtab, trimmedQuery, subtabs, searchParams, setSearchParams]);
+    }, [activeSubtab, trimmedQuery, subtabs, activeFilters, searchParams, setSearchParams]);
 
     useEffect(() => {
         let cancelled = false;
