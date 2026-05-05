@@ -170,6 +170,10 @@ const Collection = ({ socket }) => {
 
     const isFiltering = filterValue !== 'all';
 
+    // Movie / tv collections also support sorting by IMDb rating
+    // (looked up from the omdb_cache and attached to each item by
+    // the backend). Other types stay personal-rating-only.
+    const supportsImdbSort = collectionType === 'movie' || collectionType === 'tv';
     const sortOptions = [
         { value: 'custom',       label: 'Custom',           icon: GripVertical },
         { value: 'recent',       label: 'Date Added ↓',     icon: ArrowDownWideNarrow },
@@ -177,8 +181,12 @@ const Collection = ({ socket }) => {
         { value: 'release-desc', label: 'Release Date ↓',   icon: Calendar },
         { value: 'release-asc',  label: 'Release Date ↑',   icon: Calendar },
         { value: 'watched',      label: `Recently ${watchedLabel}`, icon: Eye },
-        { value: 'rating-desc',  label: 'Rating ↓',         icon: Star },
-        { value: 'rating-asc',   label: 'Rating ↑',         icon: Star },
+        { value: 'rating-desc',  label: 'Your Rating ↓',    icon: Star },
+        { value: 'rating-asc',   label: 'Your Rating ↑',    icon: Star },
+        ...(supportsImdbSort ? [
+            { value: 'imdb-desc', label: 'IMDb Rating ↓',   icon: Star },
+            { value: 'imdb-asc',  label: 'IMDb Rating ↑',   icon: Star },
+        ] : []),
         { value: 'abc',          label: 'A–Z',              icon: ArrowDownAZ },
         { value: 'zyx',          label: 'Z–A',              icon: ArrowDownZA },
     ];
@@ -602,6 +610,20 @@ const Collection = ({ socket }) => {
             result = [...result].sort((a, b) => {
                 const ra = a?.userRating;
                 const rb = b?.userRating;
+                if (ra == null && rb == null) return addedAt(b) - addedAt(a);
+                if (ra == null) return 1;
+                if (rb == null) return -1;
+                if (ra !== rb) return (ra - rb) * dir;
+                return addedAt(b) - addedAt(a);
+            });
+        } else if (sortValue === 'imdb-desc' || sortValue === 'imdb-asc') {
+            // Same null-to-bottom convention as personal rating —
+            // items missing an IMDb rating (cache miss / no IMDb id /
+            // not movie or tv) sort below rated ones either way.
+            const dir = sortValue === 'imdb-desc' ? -1 : 1;
+            result = [...result].sort((a, b) => {
+                const ra = a?.imdbRating;
+                const rb = b?.imdbRating;
                 if (ra == null && rb == null) return addedAt(b) - addedAt(a);
                 if (ra == null) return 1;
                 if (rb == null) return -1;

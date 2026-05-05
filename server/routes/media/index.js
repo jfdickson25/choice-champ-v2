@@ -4,6 +4,7 @@ const convert = require('xml-js');
 require('dotenv').config();
 
 const { supabase } = require('../../lib/supabase');
+const { getOmdbCached } = require('../../lib/omdb');
 
 const SGDB_NO_MATCH_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const SGDB_LOOKUP_TIMEOUT_MS = 1500;
@@ -121,72 +122,6 @@ async function getSgdbPoster(rawgId, title) {
     } catch(err) {
         console.log('SGDB lookup failed for', rawgId, title, err.message);
         return null;
-    }
-}
-
-// OMDb response cache (Supabase `omdb_cache` table, keyed by IMDb
-// id, shared globally across all users). Detail-page opens hit this
-// helper instead of OMDb directly — fresh rows are served from
-// Supabase (~30ms), stale rows trigger a single OMDb refresh and
-// upsert on the next view, OMDb failures fall back to whatever
-// stale row we have so the UI never goes blank. 7-day TTL is the
-// balance between API quota relief and rating-drift staleness.
-const OMDB_FRESH_TTL_MS = 7 * 24 * 60 * 60 * 1000;
-
-function omdbRowToShape(row) {
-    if (!row) return null;
-    return {
-        imdbRating: row.imdb_rating,
-        Metascore: row.metacritic,
-        Awards: row.awards,
-        Rated: row.rated,
-        Ratings: row.rotten_tomatoes
-            ? [{ Source: 'Rotten Tomatoes', Value: row.rotten_tomatoes }]
-            : [],
-    };
-}
-
-async function getOmdbCached(imdbId) {
-    if (!imdbId || !process.env.OMDB_API_KEY) return null;
-
-    const { data: cached } = await supabase
-        .from('omdb_cache')
-        .select('*')
-        .eq('imdb_id', imdbId)
-        .maybeSingle();
-
-    const isFresh = cached
-        && cached.fetched_at
-        && Date.now() - new Date(cached.fetched_at).getTime() < OMDB_FRESH_TTL_MS;
-
-    if (isFresh) return omdbRowToShape(cached);
-
-    try {
-        const res = await fetch(`https://www.omdbapi.com/?i=${imdbId}&apikey=${process.env.OMDB_API_KEY}`);
-        const parsed = await res.json();
-        if (parsed?.Response !== 'True') {
-            // OMDb has no entry — return whatever stale data we have,
-            // or null if we've never cached this id before.
-            return omdbRowToShape(cached);
-        }
-
-        const rt = parsed.Ratings?.find(r => r.Source === 'Rotten Tomatoes')?.Value || null;
-        await supabase
-            .from('omdb_cache')
-            .upsert({
-                imdb_id: imdbId,
-                imdb_rating: parsed.imdbRating && parsed.imdbRating !== 'N/A' ? parsed.imdbRating : null,
-                rotten_tomatoes: rt,
-                metacritic: parsed.Metascore && parsed.Metascore !== 'N/A' ? parsed.Metascore : null,
-                awards: parsed.Awards && parsed.Awards !== 'N/A' ? parsed.Awards : null,
-                rated: parsed.Rated && parsed.Rated !== 'N/A' ? parsed.Rated : null,
-                fetched_at: new Date().toISOString(),
-            }, { onConflict: 'imdb_id' });
-
-        return parsed;
-    } catch (_) {
-        // OMDb / network failure — stale beats nothing.
-        return omdbRowToShape(cached);
     }
 }
 

@@ -4,6 +4,24 @@ const convert = require('xml-js');
 
 const { supabase } = require('../../lib/supabase');
 const { requireAuth } = require('../../middleware/auth');
+const { getOmdbCached, lookupImdbRatings } = require('../../lib/omdb');
+
+// Pulls the IMDb id off TMDB's external_ids endpoint for a single
+// movie / tv item. Used at add-time so we can persist imdb_id on
+// the collection_items row + pre-warm omdb_cache. Soft-failure: a
+// hiccup just leaves imdb_id null (handled gracefully downstream).
+async function fetchTmdbImdbId(mediaType, tmdbId) {
+    if (!process.env.MOVIE_DB_API_KEY) return null;
+    if (mediaType !== 'movie' && mediaType !== 'tv') return null;
+    try {
+        const res = await fetch(`https://api.themoviedb.org/3/${mediaType}/${tmdbId}/external_ids?api_key=${process.env.MOVIE_DB_API_KEY}`);
+        if (!res.ok) return null;
+        const data = await res.json();
+        return data?.imdb_id || null;
+    } catch (_) {
+        return null;
+    }
+}
 
 // Map a collection_items DB row to the legacy response shape the frontend expects.
 const itemToLegacy = (row) => ({
@@ -142,11 +160,27 @@ router
             }
         }
 
+        // For movie / tv collections, bulk-join the omdb_cache so
+        // the frontend can sort items by IMDb rating without a per-
+        // item upstream call. NULL entries (cache miss / no IMDb id)
+        // come back as null and sort to the bottom of an IMDb sort.
+        let imdbRatingById = {};
+        if ((collection.type === 'movie' || collection.type === 'tv') && itemRows.length > 0) {
+            const imdbIds = itemRows.map(r => r.imdb_id).filter(Boolean);
+            const ratings = await lookupImdbRatings(imdbIds);
+            for (const row of itemRows) {
+                if (!row.imdb_id) continue;
+                const r = ratings.get(row.imdb_id);
+                if (r != null) imdbRatingById[row.id] = Number(r) || null;
+            }
+        }
+
         res.json({
             items: itemRows.map(row => ({
                 ...itemToLegacy(row),
                 userRating: ratingByItemId[String(row.item_id)] ?? null,
                 globalWatched: Boolean(globalWatchedByItemId[String(row.item_id)]),
+                imdbRating: imdbRatingById[row.id] ?? null,
             })),
             shareCode: collection.share_code,
             name: collection.name,
@@ -194,6 +228,21 @@ router
                     ),
                 });
             } else {
+                // For movie / tv items, also stamp imdb_id (from TMDB
+                // external_ids) so the Collection page can sort by
+                // IMDb rating later. Pre-warm the OMDb cache in the
+                // background — `await` would slow add-flow latency
+                // for no UX gain since the result isn't used here.
+                let imdbId = null;
+                if (collection.type === 'movie' || collection.type === 'tv') {
+                    imdbId = await fetchTmdbImdbId(collection.type, item.id);
+                    if (imdbId) {
+                        // Fire-and-forget — populates omdb_cache so the
+                        // first sort-by-IMDb after this add already
+                        // has rating data.
+                        getOmdbCached(imdbId).catch(() => {});
+                    }
+                }
                 inserts.push({
                     collection_id: collectionId,
                     item_id: String(item.id),
@@ -202,6 +251,7 @@ router
                     poster: item.poster,
                     complete: false,
                     release_date: normalizeReleaseDate(item.releaseDate, collection.type),
+                    imdb_id: imdbId,
                 });
             }
         }
