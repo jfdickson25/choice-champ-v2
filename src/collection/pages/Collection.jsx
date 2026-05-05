@@ -55,6 +55,7 @@ const Collection = ({ socket }) => {
     const [searchParams, setSearchParams] = useSearchParams();
     const urlFilter = searchParams.get('filter');
     const urlQuery = searchParams.get('q') || '';
+    const urlSort = searchParams.get('sort') || '';
 
     const [items, setItems] = useState([]);
     const [isEdit, setIsEdit] = useState(false);
@@ -65,9 +66,14 @@ const Collection = ({ socket }) => {
     const [shareCode, setShareCode] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [collectionName, setCollectionName] = useState('');
-    const [sortValue, setSortValue] = useState(() =>
-        localStorage.getItem(`choice-champ:custom-order:${collectionId}`) ? 'custom' : 'recent'
-    );
+    // URL-backed sort so navigating into ItemDetails and tapping back
+    // (or hitting the originator X-close on a deep drill) restores
+    // whatever the user had selected. Falls back to the historical
+    // localStorage-driven default when the URL has no sort param.
+    const [sortValue, setSortValue] = useState(() => {
+        if (urlSort) return urlSort;
+        return localStorage.getItem(`choice-champ:custom-order:${collectionId}`) ? 'custom' : 'recent';
+    });
     const [filterValue, setFilterValue] = useState(
         ['watched', 'unwatched'].includes(urlFilter) ? urlFilter : 'all'
     );
@@ -320,18 +326,22 @@ const Collection = ({ socket }) => {
         return () => { supabase.removeChannel(channel); channelRef.current = null; };
     }, [collectionId]);
 
-    // Mirror filter + query into the URL so navigating to ItemDetails
-    // and tapping back restores both. Defaults are dropped from the
-    // URL to keep the bar clean.
+    // Mirror filter + query + sort into the URL so navigating to
+    // ItemDetails and tapping back restores all three. Defaults are
+    // dropped from the URL to keep the bar clean — `sort=recent`
+    // (the bare default) is omitted; non-default sorts including
+    // 'custom' get written so a user who picked it sees the same
+    // ordering on return.
     useEffect(() => {
         const next = new URLSearchParams(searchParams);
         if (filterValue === 'all') next.delete('filter'); else next.set('filter', filterValue);
         const trimmed = query.trim();
         if (trimmed) next.set('q', trimmed); else next.delete('q');
+        if (sortValue && sortValue !== 'recent') next.set('sort', sortValue); else next.delete('sort');
         if (next.toString() !== searchParams.toString()) {
             setSearchParams(next, { replace: true });
         }
-    }, [filterValue, query, searchParams, setSearchParams]);
+    }, [filterValue, query, sortValue, searchParams, setSearchParams]);
 
     // Personal rating changes from ItemDetails (same tab, same user).
     // Not broadcast through Supabase since ratings are per-user — other
